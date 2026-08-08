@@ -3,168 +3,88 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Loa TTS Thường Trực</title>
+<title>Loa TikTok Comment TTS</title>
 <style>
-:root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}*{box-sizing:border-box}body{margin:0;background:#090b0f;color:#edf2f7}.wrap{width:min(920px,calc(100% - 24px));margin:0 auto;padding:22px 0 48px}.title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.title h1{font-size:25px;margin:0}.pill{font-size:12px;padding:6px 10px;border:1px solid #303845;border-radius:999px;color:#aab5c5}.panel{background:#11151c;border:1px solid #242b35;border-radius:16px;padding:15px;margin-bottom:14px}.speaker{display:grid;grid-template-columns:2fr 1fr;gap:10px}.grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}.advanced{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:10px}label{display:block;font-size:12px;color:#9ba7b7;margin-bottom:6px}input,select,textarea,button{width:100%;border:1px solid #303846;background:#151a22;color:#edf2f7;border-radius:10px;padding:10px 12px;font:inherit}textarea{min-height:130px;resize:vertical;margin-top:10px}button{font-weight:700;cursor:pointer}.primary{background:#263550}.danger{background:#2a1b21}.big{min-height:52px;font-size:17px}.buttons{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-top:10px}.status{margin-top:10px;background:#0d1117;border:1px solid #252c36;border-radius:10px;padding:11px 12px;color:#b9c3d1;font-size:13px;line-height:1.45}.hint{font-size:12px;color:#7f8b9a;line-height:1.5;margin-top:10px}.ok{color:#8ed49f}.bad{color:#ef9a9a}@media(max-width:760px){.speaker,.grid,.advanced,.buttons{grid-template-columns:1fr}.title{align-items:flex-start;flex-direction:column}.wrap{padding-top:14px}}
+:root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}*{box-sizing:border-box}body{margin:0;background:#090b10;color:#edf2f7}.wrap{width:min(920px,calc(100% - 24px));margin:0 auto;padding:20px 0 50px}h1{font-size:25px;margin:0 0 4px}.sub{color:#8793a3;font-size:13px;margin-bottom:16px}.panel{background:#11161d;border:1px solid #252c36;border-radius:16px;padding:15px;margin-bottom:14px}.statusGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.card{background:#0d1117;border:1px solid #252c36;border-radius:12px;padding:11px}.card b{display:block;font-size:12px;color:#8f9aaa;margin-bottom:5px}.card span{font-size:14px}.grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}.advanced{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:10px}.buttons{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-top:10px}label{display:block;font-size:12px;color:#9aa6b6;margin-bottom:6px}input,select,button{width:100%;border:1px solid #303846;background:#151a22;color:#edf2f7;border-radius:10px;padding:10px 12px;font:inherit}input[type=checkbox]{width:auto}button{cursor:pointer;font-weight:750}.primary{background:#263650;min-height:52px;font-size:17px}.danger{background:#2b1c22}.status{margin-top:10px;background:#0d1117;border:1px solid #252c36;border-radius:10px;padding:11px 12px;color:#b8c2d0;font-size:13px;line-height:1.45}.current{font-size:17px;line-height:1.5;min-height:56px}.hint{font-size:12px;color:#7f8b9a;line-height:1.5;margin-top:8px}.row{display:flex;align-items:center;gap:9px}@media(max-width:760px){.statusGrid,.grid,.advanced,.buttons{grid-template-columns:1fr}.wrap{padding-top:14px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="title">
-    <div><h1>🔊 Loa TTS Thường Trực</h1><div class="hint">Mở trang một lần, bật loa và để thiết bị tự nhận câu từ middleware.</div></div>
-    <div class="pill" id="socketBadge">WebSocket: đang nối...</div>
-  </div>
+  <h1>🔊 Loa TikTok Comment TTS</h1>
+  <div class="sub">Chỉ đọc COMMENT từ TikTok LIVE middleware. Không xử lý JOIN / FOLLOW / LIKE / GIFT.</div>
 
   <div class="panel">
-    <div class="speaker">
-      <div><label>Tên thiết bị loa</label><input id="deviceName" value="Điện thoại loa TTS"></div>
-      <div><label>Âm lượng</label><input id="volume" type="range" min="0" max="150" value="100"></div>
+    <div class="statusGrid">
+      <div class="card"><b>MODEL</b><span id="modelState">Đang kiểm tra...</span></div>
+      <div class="card"><b>MIDDLEWARE</b><span id="middlewareState">Chưa nhận</span></div>
+      <div class="card"><b>QUEUE COMMENT</b><span id="queueState">0</span></div>
+      <div class="card"><b>LOA CHÍNH</b><span id="speakerState">Chưa bật</span></div>
     </div>
-    <div class="buttons">
-      <button class="primary big" id="enable">🔊 BẬT LOA THƯỜNG TRỰC</button>
-      <button class="danger" id="stop">■ Dừng câu hiện tại</button>
-      <button id="release">Tắt loa</button>
-    </div>
-    <div class="status" id="speakerStatus">Đang kết nối tới server...</div>
-    <div class="hint">Thiết bị bấm BẬT LOA gần nhất sẽ là loa chính. Web cố giữ màn hình sáng bằng Screen Wake Lock khi trình duyệt hỗ trợ.</div>
+    <div class="status current" id="currentComment">Chưa có comment đang đọc.</div>
   </div>
 
   <div class="panel">
     <div class="grid">
-      <div><label>Giọng nói</label><select id="voice"><option value="">Đang tải giọng...</option></select></div>
-      <div><label>Phong cách</label><select id="style"><option value="tu_nhien">Tự nhiên</option><option value="doc_truyen">Đọc truyện</option><option value="tin_tuc">Tin tức</option></select></div>
-      <div><label>Priority</label><input id="priority" type="number" min="0" max="1000" value="50"></div>
+      <div><label>Tên thiết bị loa</label><input id="deviceName" value="Điện thoại TikTok TTS"></div>
+      <div><label>Âm lượng</label><input id="volume" type="range" min="0" max="150" value="100"></div>
+      <div><label>WebSocket</label><div class="status" id="socketState" style="margin-top:0">Đang nối...</div></div>
     </div>
-    <textarea id="text" placeholder="Nhập câu để test loa..."></textarea>
+    <div class="buttons">
+      <button class="primary" id="enable">🔊 BẬT LOA TIKTOK</button>
+      <button class="danger" id="release">TẮT LOA</button>
+    </div>
+    <div class="status" id="playState">Kết nối server trước, sau đó bấm BẬT LOA TIKTOK một lần.</div>
+    <div class="hint">Điện thoại giữ trang này mở. Khi middleware nhận comment, audio được VieNeu sinh realtime trên máy chủ rồi stream thẳng tới loa/tai nghe của thiết bị này.</div>
+  </div>
+
+  <div class="panel">
+    <div class="grid">
+      <div><label>Giọng đọc comment</label><select id="voice"><option value="">Đang tải giọng...</option></select></div>
+      <div><label>Phong cách</label><select id="style"><option value="tu_nhien">Tự nhiên</option><option value="doc_truyen">Đọc truyện</option><option value="tin_tuc">Tin tức</option></select></div>
+      <div><label>Đọc tên viewer</label><div class="row"><input id="readUsername" type="checkbox"><span>Có</span></div></div>
+    </div>
     <div class="advanced">
       <div><label>Temperature</label><input id="temperature" type="number" step="0.01" value="0.78"></div>
       <div><label>Top K</label><input id="topK" type="number" value="25"></div>
       <div><label>Top P</label><input id="topP" type="number" step="0.01" value="0.93"></div>
       <div><label>Max chars</label><input id="maxChars" type="number" value="180"></div>
-      <div><label>Repetition</label><input id="repeatPenalty" type="number" step="0.05" value="1.20"></div>
+      <div><label>Repetition</label><input id="repetition" type="number" step="0.05" value="1.20"></div>
     </div>
     <div class="buttons">
-      <button class="primary" id="testSpeak">▶ Gửi câu test</button>
-      <button id="clear">Xóa queue</button>
-      <button id="refresh">Làm mới trạng thái</button>
+      <button id="saveSettings">LƯU GIỌNG / CẤU HÌNH</button>
+      <button id="clearQueue">XÓA COMMENT ĐANG CHỜ</button>
     </div>
-    <div class="status" id="serverStatus">Đang đọc trạng thái server...</div>
+    <div class="status" id="settingsState">Cấu hình này áp dụng cho mọi comment TikTok nhận sau đó.</div>
   </div>
 </div>
 <script>
 const $=id=>document.getElementById(id);
-const ID_KEY='loa_tts_device_id',NAME_KEY='loa_tts_device_name';
-let deviceId=localStorage.getItem(ID_KEY);
-if(!deviceId){const raw=(globalThis.crypto&&typeof globalThis.crypto.randomUUID==='function')?globalThis.crypto.randomUUID():(Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));deviceId='web-'+raw.slice(0,12);localStorage.setItem(ID_KEY,deviceId)}
-$('deviceName').value=localStorage.getItem(NAME_KEY)||$('deviceName').value;
+const DEVICE_ID_KEY='tiktok_comment_tts_device_id';
+const DEVICE_NAME_KEY='tiktok_comment_tts_device_name';
+let deviceId=localStorage.getItem(DEVICE_ID_KEY);
+if(!deviceId){const r=(globalThis.crypto&&typeof crypto.randomUUID==='function')?crypto.randomUUID().slice(0,8):(Date.now().toString(36)+Math.random().toString(36).slice(2,7));deviceId='speaker-'+r;localStorage.setItem(DEVICE_ID_KEY,deviceId)}
+$('deviceName').value=localStorage.getItem(DEVICE_NAME_KEY)||$('deviceName').value;
 let ws=null,reconnectTimer=null,heartbeatTimer=null,audioCtx=null,gainNode=null,activeAbort=null,activeSources=[],enabled=false,wakeLock=null,currentJobId=null,playToken=0;
-
-function badge(text,cls=''){const e=$('socketBadge');e.textContent=text;e.className='pill '+cls}
-function speakerText(text){$('speakerStatus').textContent=text}
-function wsSend(data){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(data))}
-
-function connectWs(){
-  if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING))return;
-  const proto=location.protocol==='https:'?'wss':'ws';
-  const name=$('deviceName').value.trim()||'Loa web';
-  ws=new WebSocket(`${proto}://${location.host}/ws/speaker?device_id=${encodeURIComponent(deviceId)}&name=${encodeURIComponent(name)}`);
-  badge('WebSocket: đang nối...');
-  ws.onopen=()=>{badge('WebSocket: online','ok');clearInterval(heartbeatTimer);heartbeatTimer=setInterval(()=>wsSend({type:'ping'}),20000);if(enabled)wsSend({type:'claim'})};
-  ws.onmessage=async event=>{
-    let msg;try{msg=JSON.parse(event.data)}catch{return}
-    if(msg.type==='hello'){if(!enabled)speakerText(msg.message||'Đã kết nối. Hãy bật loa.')}
-    else if(msg.type==='claimed'){enabled=true;$('enable').textContent='✅ LOA ĐANG BẬT';speakerText('✅ Thiết bị này đang là LOA CHÍNH. Đang chờ câu từ middleware...')}
-    else if(msg.type==='released'){enabled=false;$('enable').textContent='🔊 BẬT LOA THƯỜNG TRỰC';speakerText('Loa đã tắt. WebSocket vẫn kết nối.')}
-    else if(msg.type==='speak'){await playJob(msg.job)}
-    else if(msg.type==='stop'){stopLocal(false);speakerText('Đã dừng câu hiện tại: '+(msg.reason||''))}
-  };
-  ws.onclose=()=>{badge('WebSocket: mất kết nối','bad');clearInterval(heartbeatTimer);stopLocal(false);clearTimeout(reconnectTimer);reconnectTimer=setTimeout(connectWs,2000)};
-  ws.onerror=()=>badge('WebSocket: lỗi','bad');
-}
-
-async function ensureAudio(){
-  if(!audioCtx){const C=window.AudioContext||window.webkitAudioContext;if(!C)throw new Error('Trình duyệt không hỗ trợ Web Audio API');audioCtx=new C();gainNode=audioCtx.createGain();gainNode.connect(audioCtx.destination)}
-  gainNode.gain.value=Number($('volume').value||100)/100;
-  if(audioCtx.state==='suspended')await audioCtx.resume();
-}
+function wsSend(obj){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(obj))}
+function setPlay(text){$('playState').textContent=text}
+function connectWs(){if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING))return;const proto=location.protocol==='https:'?'wss':'ws';const name=$('deviceName').value.trim()||'Loa TikTok';ws=new WebSocket(`${proto}://${location.host}/ws/speaker?device_id=${encodeURIComponent(deviceId)}&name=${encodeURIComponent(name)}`);$('socketState').textContent='Đang nối...';ws.onopen=()=>{$('socketState').textContent='Online';clearInterval(heartbeatTimer);heartbeatTimer=setInterval(()=>wsSend({type:'ping'}),20000);if(enabled)wsSend({type:'claim'})};ws.onmessage=async ev=>{let msg;try{msg=JSON.parse(ev.data)}catch{return}if(msg.type==='hello'){if(!enabled)setPlay(msg.message||'Đã kết nối. Bấm BẬT LOA TIKTOK.')}else if(msg.type==='claimed'){enabled=true;$('enable').textContent='✅ LOA TIKTOK ĐANG BẬT';setPlay('✅ Thiết bị này đang là loa chính. Đang chờ comment...');requestWakeLock()}else if(msg.type==='released'){enabled=false;$('enable').textContent='🔊 BẬT LOA TIKTOK';setPlay('Loa đã tắt. Comment vẫn có thể chờ trong queue.')}else if(msg.type==='comment'){await playComment(msg.job)}else if(msg.type==='stop'){stopLocal(false);setPlay('Đã dừng audio: '+(msg.reason||''))}};ws.onclose=()=>{$('socketState').textContent='Mất kết nối';clearInterval(heartbeatTimer);if(reconnectTimer)clearTimeout(reconnectTimer);reconnectTimer=setTimeout(connectWs,2000)};ws.onerror=()=>{$('socketState').textContent='Lỗi'}}
+async function ensureAudio(){if(!audioCtx){const C=window.AudioContext||window.webkitAudioContext;if(!C)throw new Error('Trình duyệt không hỗ trợ Web Audio API');audioCtx=new C();gainNode=audioCtx.createGain();gainNode.connect(audioCtx.destination)}gainNode.gain.value=Number($('volume').value||100)/100;if(audioCtx.state==='suspended')await audioCtx.resume()}
 async function requestWakeLock(){try{if('wakeLock'in navigator)wakeLock=await navigator.wakeLock.request('screen')}catch(e){console.warn(e)}}
 async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null}}catch{}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&enabled)requestWakeLock()});
-
+function stopLocal(report=true){playToken++;if(activeAbort){activeAbort.abort();activeAbort=null}for(const s of activeSources){try{s.stop()}catch{}}activeSources=[];if(report&&currentJobId)wsSend({type:'failed',job_id:currentJobId,error:'stopped locally'});currentJobId=null}
 function mergeBytes(a,b){if(!a||!a.length)return b;const out=new Uint8Array(a.length+b.length);out.set(a);out.set(b,a.length);return out}
-function stopLocal(report=true){
-  playToken++;
-  if(activeAbort){activeAbort.abort();activeAbort=null}
-  for(const src of activeSources){try{src.stop()}catch{}}
-  activeSources=[];
-  if(report&&currentJobId)wsSend({type:'failed',job_id:currentJobId,error:'stopped locally'});
-  currentJobId=null;
-}
-
-async function playJob(job){
-  stopLocal(false);
-  const token=++playToken;
-  currentJobId=job.id;
-  try{
-    await ensureAudio();
-    activeAbort=new AbortController();
-    speakerText(`⏳ Đang lấy audio: ${job.text.slice(0,100)}`);
-    const payload={text:job.text,voice:job.voice||null,style:job.style||'tu_nhien',priority:Number(job.priority||50),temperature:Number(job.temperature||0.78),top_k:Number(job.top_k||25),top_p:Number(job.top_p||0.93),max_chars:Number(job.max_chars||180),repetition_penalty:Number(job.repetition_penalty||1.2),apply_watermark:Boolean(job.apply_watermark)};
-    const r=await fetch('/api/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:activeAbort.signal});
-    if(!r.ok)throw new Error(await r.text()||`HTTP ${r.status}`);
-    if(!r.body)throw new Error('Trình duyệt không hỗ trợ streaming response');
-    const sampleRate=Number(r.headers.get('X-TTS-Sample-Rate')||48000);
-    const format=(r.headers.get('X-TTS-Format')||'s16le').toLowerCase();
-    if(format!=='s16le')throw new Error('Format audio không hỗ trợ: '+format);
-    const reader=r.body.getReader();
-    let carry=new Uint8Array(0),nextTime=audioCtx.currentTime+0.14,first=true;
-    while(true){
-      const {done,value}=await reader.read();
-      if(done)break;
-      if(token!==playToken)return;
-      if(!value||!value.length)continue;
-      const data=mergeBytes(carry,value),usable=data.length-data.length%2;
-      carry=data.slice(usable);
-      if(!usable)continue;
-      const count=usable/2,floats=new Float32Array(count),view=new DataView(data.buffer,data.byteOffset,usable);
-      for(let i=0;i<count;i++)floats[i]=view.getInt16(i*2,true)/32768;
-      const buffer=audioCtx.createBuffer(1,count,sampleRate);buffer.copyToChannel(floats,0);
-      const src=audioCtx.createBufferSource();src.buffer=buffer;src.connect(gainNode);
-      if(nextTime<audioCtx.currentTime+0.05)nextTime=audioCtx.currentTime+0.08;
-      src.start(nextTime);nextTime+=buffer.duration;activeSources.push(src);src.onended=()=>activeSources=activeSources.filter(x=>x!==src);
-      if(first){first=false;wsSend({type:'started',job_id:job.id});speakerText(`🔊 Đang đọc: ${job.text.slice(0,140)}`)}
-    }
-    const remain=Math.max(0,nextTime-audioCtx.currentTime);
-    if(remain)await new Promise(resolve=>setTimeout(resolve,remain*1000));
-    if(token===playToken){activeAbort=null;currentJobId=null;wsSend({type:'completed',job_id:job.id});speakerText('✅ Đọc xong. Đang chờ câu tiếp theo...')}
-  }catch(e){
-    if(e&&e.name==='AbortError')return;
-    activeAbort=null;
-    const jobId=currentJobId||job.id;currentJobId=null;
-    wsSend({type:'failed',job_id:jobId,error:String(e)});
-    speakerText('❌ Lỗi phát: '+e);
-  }
-}
-
-function formPayload(){return{text:$('text').value.trim(),voice:$('voice').value||null,style:$('style').value,priority:Number($('priority').value||50),temperature:Number($('temperature').value||0.78),top_k:Number($('topK').value||25),top_p:Number($('topP').value||0.93),max_chars:Number($('maxChars').value||180),repetition_penalty:Number($('repeatPenalty').value||1.2),apply_watermark:false}}
-
-async function loadVoices(){
-  try{const r=await fetch('/api/voices',{cache:'no-store'}),data=await r.json();if(!r.ok)throw new Error(JSON.stringify(data));$('voice').innerHTML='<option value="">Mặc định</option>';for(const v of data){const o=document.createElement('option');o.value=v.id;o.textContent=v.label||v.id;$('voice').appendChild(o)}}catch(e){$('voice').innerHTML='<option value="">Không tải được giọng</option>'}
-}
-async function refreshStatus(){
-  try{const r=await fetch('/status',{cache:'no-store'}),d=await r.json();const active=d.active_speaker_name?`${d.active_speaker_name} (${d.active_speaker_id})`:'chưa có';$('serverStatus').textContent=`TTS: ${d.tts_server} · Loa kết nối: ${d.connected_speakers} · Loa chính: ${active} · Queue: ${d.queue_size} · Đã đọc: ${d.played} · Lỗi: ${d.failed}${d.current_text?' · Đang xử lý: '+d.current_text.slice(0,80):''}`}catch(e){$('serverStatus').textContent='Không đọc được trạng thái server: '+e}
-}
-
-$('enable').addEventListener('click',async()=>{try{localStorage.setItem(NAME_KEY,$('deviceName').value.trim());await ensureAudio();await requestWakeLock();enabled=true;connectWs();if(ws&&ws.readyState===WebSocket.OPEN)wsSend({type:'claim'});speakerText('Đang nhận quyền loa...')}catch(e){speakerText('Không bật được loa: '+e)}});
-$('release').addEventListener('click',async()=>{try{await fetch('/stop',{method:'POST'})}catch{}stopLocal(false);enabled=false;wsSend({type:'release'});await releaseWakeLock();$('enable').textContent='🔊 BẬT LOA THƯỜNG TRỰC'});
-$('stop').addEventListener('click',async()=>{try{await fetch('/stop',{method:'POST'})}catch{}stopLocal(false);speakerText('Đã yêu cầu dừng câu hiện tại.')});
-$('testSpeak').addEventListener('click',async()=>{const p=formPayload();if(!p.text){$('serverStatus').textContent='Hãy nhập câu test.';return}try{const r=await fetch('/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}),d=await r.json();if(!r.ok)throw new Error(JSON.stringify(d));$('serverStatus').textContent=`Đã thêm job ${d.id} vào queue.`;refreshStatus()}catch(e){$('serverStatus').textContent='Lỗi gửi test: '+e}});
-$('clear').addEventListener('click',async()=>{try{const r=await fetch('/clear',{method:'POST'}),d=await r.json();$('serverStatus').textContent=`Đã xóa ${d.cleared||0} câu đang chờ.`;refreshStatus()}catch(e){$('serverStatus').textContent='Lỗi xóa queue: '+e}});
-$('refresh').addEventListener('click',refreshStatus);
+async function playComment(job){stopLocal(false);const token=++playToken;currentJobId=job.id;try{await ensureAudio();activeAbort=new AbortController();setPlay(`⏳ ${job.display_name}: ${job.text}`);const r=await fetch(`/audio/${encodeURIComponent(job.id)}?device_id=${encodeURIComponent(deviceId)}`,{cache:'no-store',signal:activeAbort.signal});if(!r.ok)throw new Error(await r.text()||`HTTP ${r.status}`);if(!r.body)throw new Error('Trình duyệt không hỗ trợ streaming response');const sr=Number(r.headers.get('X-TTS-Sample-Rate')||48000),fmt=(r.headers.get('X-TTS-Format')||'s16le').toLowerCase();if(fmt!=='s16le')throw new Error('Format audio không hỗ trợ: '+fmt);const reader=r.body.getReader();let carry=new Uint8Array(0),next=audioCtx.currentTime+0.14,first=true;while(true){const {done,value}=await reader.read();if(done)break;if(token!==playToken)return;if(!value||!value.length)continue;const data=mergeBytes(carry,value),n=data.length-data.length%2;carry=data.slice(n);if(!n)continue;const count=n/2,samples=new Float32Array(count),view=new DataView(data.buffer,data.byteOffset,n);for(let i=0;i<count;i++)samples[i]=view.getInt16(i*2,true)/32768;const buffer=audioCtx.createBuffer(1,count,sr);buffer.copyToChannel(samples,0);const src=audioCtx.createBufferSource();src.buffer=buffer;src.connect(gainNode);if(next<audioCtx.currentTime+0.05)next=audioCtx.currentTime+0.08;src.start(next);next+=buffer.duration;activeSources.push(src);src.onended=()=>activeSources=activeSources.filter(x=>x!==src);if(first){first=false;wsSend({type:'started',job_id:job.id});setPlay(`🔊 ${job.display_name}: ${job.text}`)}}const remain=Math.max(0,next-audioCtx.currentTime);if(remain)await new Promise(ok=>setTimeout(ok,remain*1000));if(token===playToken){activeAbort=null;currentJobId=null;wsSend({type:'completed',job_id:job.id});setPlay('✅ Đọc xong. Đang chờ comment tiếp theo...')}}catch(e){if(e&&e.name==='AbortError')return;activeAbort=null;const id=currentJobId||job.id;currentJobId=null;wsSend({type:'failed',job_id:id,error:String(e)});setPlay('❌ Lỗi phát comment: '+e)}}
+async function loadVoices(){const r=await fetch('/api/voices',{cache:'no-store'}),data=await r.json();if(!r.ok)throw new Error(JSON.stringify(data));$('voice').innerHTML='<option value="">Mặc định</option>';for(const v of data){const o=document.createElement('option');o.value=v.id;o.textContent=v.label||v.id;$('voice').appendChild(o)}}
+async function loadSettings(){const r=await fetch('/api/settings',{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(JSON.stringify(d));$('voice').value=d.voice||'';$('style').value=d.style||'tu_nhien';$('temperature').value=d.temperature??0.78;$('topK').value=d.top_k??25;$('topP').value=d.top_p??0.93;$('maxChars').value=d.max_chars??180;$('repetition').value=d.repetition_penalty??1.2;$('readUsername').checked=Boolean(d.read_username)}
+async function saveSettings(){const p={voice:$('voice').value||null,style:$('style').value,temperature:Number($('temperature').value||0.78),top_k:Number($('topK').value||25),top_p:Number($('topP').value||0.93),max_chars:Number($('maxChars').value||180),repetition_penalty:Number($('repetition').value||1.2),read_username:$('readUsername').checked};const r=await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}),d=await r.json();if(!r.ok)throw new Error(JSON.stringify(d));$('settingsState').textContent='✅ Đã lưu cấu hình giọng đọc comment.'}
+async function refreshStatus(){try{const r=await fetch('/status',{cache:'no-store'}),d=await r.json();$('modelState').textContent=d.model_loaded?`READY · ${d.precision}`:'Đang nạp';const s=d.stats||{};$('middlewareState').textContent=s.last_webhook_at?`Đã nhận · ${s.comments_received||0} comment`:'Chưa nhận event';$('queueState').textContent=`${d.queue_size}/${d.queue_capacity}`;$('speakerState').textContent=d.active_speaker_name||'Chưa bật';if(d.current_comment){$('currentComment').textContent=`Đang đọc — ${d.current_comment.display_name}: ${d.current_comment.text}`}else{$('currentComment').textContent=`Đã đọc ${s.comments_played||0} · Bỏ qua non-comment ${s.ignored_non_comment||0} · Rớt/cũ ${(s.comments_dropped||0)+(s.comments_expired||0)}`}}catch(e){$('modelState').textContent='OFFLINE'}}
+$('enable').addEventListener('click',async()=>{try{localStorage.setItem(DEVICE_NAME_KEY,$('deviceName').value.trim());await ensureAudio();enabled=true;connectWs();if(ws&&ws.readyState===WebSocket.OPEN)wsSend({type:'claim'});setPlay('Đang nhận quyền loa...')}catch(e){setPlay('Không bật được loa: '+e)}});
+$('release').addEventListener('click',async()=>{enabled=false;stopLocal(false);wsSend({type:'release'});await releaseWakeLock();$('enable').textContent='🔊 BẬT LOA TIKTOK'});
+$('saveSettings').addEventListener('click',async()=>{try{await saveSettings()}catch(e){$('settingsState').textContent='Lỗi lưu cấu hình: '+e}});
+$('clearQueue').addEventListener('click',async()=>{try{const r=await fetch('/clear',{method:'POST'}),d=await r.json();$('settingsState').textContent=`Đã xóa ${d.cleared||0} comment đang chờ.`;refreshStatus()}catch(e){$('settingsState').textContent='Lỗi xóa queue: '+e}});
 $('volume').addEventListener('input',()=>{if(gainNode)gainNode.gain.value=Number($('volume').value)/100});
-$('deviceName').addEventListener('change',()=>localStorage.setItem(NAME_KEY,$('deviceName').value.trim()));
-
-connectWs();loadVoices();refreshStatus();setInterval(refreshStatus,2000);
+async function boot(){connectWs();try{await loadVoices();await loadSettings();$('settingsState').textContent='Cấu hình giọng đã tải.'}catch(e){$('settingsState').textContent='Chưa tải được model/voice: '+e}refreshStatus();setInterval(refreshStatus,2000)}boot();
 </script>
 </body>
 </html>
