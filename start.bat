@@ -28,12 +28,13 @@ echo Health    : http://127.0.0.1:%LOA_TTS_PORT%/health
 echo Precision : %LOA_TTS_PRECISION%
 echo Queue max : %LOA_TTS_QUEUE_MAX%
 echo Max age   : %LOA_TTS_COMMENT_MAX_AGE%s
+echo Filter    : EXACT PHRASE - xoa cum, giu phan comment con lai
 echo.
 echo Dien thoai LAN: http://IP_MAY_CHU:%LOA_TTS_PORT%
 echo ============================================================
 echo.
 
-.venv\Scripts\python.exe app.py
+.venv\Scripts\python.exe run.py
 set EXIT_CODE=%ERRORLEVEL%
 
 echo.
