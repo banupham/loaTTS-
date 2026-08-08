@@ -4,6 +4,8 @@ __pycache__/
 *.pyo
 .env
 settings.json
+.playback_speed.json
 .runtime_index.html
+.runtime_speed_index.html
 .DS_Store
 Thumbs.db
