@@ -29,12 +29,13 @@ echo Precision : %LOA_TTS_PRECISION%
 echo Queue max : %LOA_TTS_QUEUE_MAX%
 echo Max age   : %LOA_TTS_COMMENT_MAX_AGE%s
 echo Filter    : EXACT PHRASE - xoa cum, giu phan comment con lai
+echo Speed     : 0.70x - 1.50x, chinh tren Web
 echo.
 echo Dien thoai LAN: http://IP_MAY_CHU:%LOA_TTS_PORT%
 echo ============================================================
 echo.
 
-.venv\Scripts\python.exe run.py
+.venv\Scripts\python.exe speed_patch.py
 set EXIT_CODE=%ERRORLEVEL%
 
 echo.
