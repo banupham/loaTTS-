@@ -55,7 +55,7 @@
 const $=id=>document.getElementById(id);
 const ID_KEY='loa_tts_device_id',NAME_KEY='loa_tts_device_name';
 let deviceId=localStorage.getItem(ID_KEY);
-if(!deviceId){deviceId='web-'+crypto.randomUUID().slice(0,8);localStorage.setItem(ID_KEY,deviceId)}
+if(!deviceId){const raw=(globalThis.crypto&&typeof globalThis.crypto.randomUUID==='function')?globalThis.crypto.randomUUID():(Date.now().toString(36)+'-'+Math.random().toString(36).slice(2));deviceId='web-'+raw.slice(0,12);localStorage.setItem(ID_KEY,deviceId)}
 $('deviceName').value=localStorage.getItem(NAME_KEY)||$('deviceName').value;
 let ws=null,reconnectTimer=null,heartbeatTimer=null,audioCtx=null,gainNode=null,activeAbort=null,activeSources=[],enabled=false,wakeLock=null,currentJobId=null,playToken=0;
 
