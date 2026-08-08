@@ -1,49 +1,33 @@
-# Loa TTS Thường Trực
+# Loa TikTok Comment TTS
 
-Module loa web độc lập cho hệ thống VieNeu TTS local.
+Project độc lập, tự chứa VieNeu TTS và chỉ phục vụ **một mục đích duy nhất**: đọc comment từ TikTok LIVE middleware `banupham/tiktok_live_cmd_active_viewers_v9`.
 
-Mục tiêu: mở một trang web trên điện thoại/laptop, bấm **BẬT LOA** một lần, sau đó middleware chỉ cần gửi text vào API. Module tự xếp hàng, gửi job tới loa đang hoạt động và phát PCM realtime trên chính thiết bị mở web.
+Không dùng repo `tts` khác. Không cần server `8765`. Model VieNeu được nạp trực tiếp trong project này.
 
-## Kiến trúc
-
-```text
-TikTok / middleware / app khác
-          |
-          | POST /speak
-          v
-+-------------------------+
-| loaTTS- :8780           |
-| - Priority queue        |
-| - WebSocket dispatcher  |
-| - TTS stream proxy      |
-+------------+------------+
-             |
-             | POST /tts/stream
-             v
-+-------------------------+
-| VieNeu TTS :8765        |
-| sinh PCM16 realtime     |
-+------------+------------+
-             |
-             | PCM stream qua :8780
-             v
-+-------------------------+
-| Điện thoại / laptop     |
-| Web Audio API           |
-| phát loa / tai nghe     |
-+-------------------------+
-```
-
-Repo này **không chứa model VieNeu** và không tự nạp model. Nó dùng TTS server đang chạy ở project `banupham/tts`.
-
-Mặc định:
+## Luồng hoạt động
 
 ```text
-VieNeu TTS server : http://127.0.0.1:8765
-Loa TTS server    : http://0.0.0.0:8780
+TikTok LIVE
+    ↓
+TikTok middleware
+    ↓ POST event
+http://127.0.0.1:9000/tiktok-event
+    ↓
+loaTTS- lọc event
+    ├─ comment → queue → VieNeu infer_stream()
+    ├─ join    → bỏ qua
+    ├─ follow  → bỏ qua
+    ├─ like    → bỏ qua
+    └─ gift    → bỏ qua
+    ↓
+PCM16 realtime
+    ↓
+điện thoại/laptop đang bật LOA TIKTOK
+    ↓
+loa / tai nghe / Bluetooth
 ```
 
-## Cài trên Windows
+## Cài đặt Windows
 
 ```cmd
 git clone https://github.com/banupham/loaTTS-.git
@@ -51,260 +35,243 @@ cd loaTTS-
 install_windows.bat
 ```
 
-Sau đó chạy TTS server VieNeu ở repo `tts` trước, rồi chạy:
+Project pin:
+
+```text
+vieneu==3.2.4
+backend=onnx
+precision=int8 mặc định
+```
+
+Lần chạy đầu VieNeu có thể tự tải model/cache cần thiết.
+
+## Khởi động loaTTS
 
 ```cmd
 start.bat
 ```
 
-Mở trên PC:
+Mặc định:
 
 ```text
-http://127.0.0.1:8780
+Web      http://127.0.0.1:9000
+Health   http://127.0.0.1:9000/health
+Webhook  http://127.0.0.1:9000/tiktok-event
 ```
 
-Mở trên điện thoại cùng Wi-Fi/LAN:
+Server tự:
 
-```text
-http://IP_MAY_CHU:8780
-```
+1. nạp VieNeu ONNX;
+2. warm-up model;
+3. mở webhook TikTok;
+4. chờ điện thoại bật loa;
+5. đọc comment theo FIFO.
 
-Ví dụ:
+## Dùng điện thoại làm loa
 
-```text
-http://192.168.1.20:8780
-```
-
-Xem IPv4 của PC:
+Xem IPv4 máy tính:
 
 ```cmd
 ipconfig
 ```
 
-Nếu điện thoại không truy cập được, chạy bằng **Run as administrator**:
+Ví dụ PC có IP `192.168.1.20`, trên điện thoại cùng Wi-Fi mở:
+
+```text
+http://192.168.1.20:9000
+```
+
+Nếu không truy cập được, chạy bằng **Run as administrator**:
 
 ```cmd
 allow_firewall.bat
 ```
 
-## Bật loa thường trực
+Trên web:
 
-Trên điện thoại/laptop:
-
-1. mở `http://IP_MAY_CHU:8780`;
-2. đặt tên thiết bị nếu muốn;
+1. chọn giọng;
+2. chọn phong cách;
 3. chỉnh âm lượng;
-4. bấm **BẬT LOA THƯỜNG TRỰC**;
-5. giữ trang web mở.
+4. tùy chọn đọc tên viewer trước comment;
+5. bấm **BẬT LOA TIKTOK**;
+6. giữ trang mở.
 
-Thiết bị bấm **BẬT LOA** gần nhất sẽ trở thành **loa chính**.
+Thiết bị bấm BẬT LOA gần nhất sẽ trở thành loa chính.
 
-Nếu mở trang trên điện thoại khác và bấm BẬT LOA, quyền phát được chuyển sang điện thoại mới.
+## Nối với TikTok middleware
 
-WebSocket tự reconnect nếu mạng chập chờn.
-
-## Lưu ý Android / trình duyệt nền
-
-Trình duyệt di động có thể bị Android tạm dừng khi:
-
-- tắt màn hình;
-- chuyển app lâu;
-- hệ thống tiết kiệm pin đóng tab nền.
-
-Trang web có thử dùng Screen Wake Lock khi trình duyệt cho phép. Tuy nhiên Wake Lock thường bị giới hạn bởi chính sách trình duyệt/secure context, nên khi mở bằng địa chỉ HTTP trong LAN có thiết bị sẽ không cho phép.
-
-Để dùng như loa cố định, nên:
-
-- cắm sạc điện thoại;
-- để trang web ở foreground;
-- tăng thời gian tắt màn hình hoặc để màn hình luôn sáng;
-- tắt tối ưu pin cho trình duyệt nếu cần;
-- dùng tai nghe/Bluetooth speaker nối với điện thoại nếu muốn âm thanh tốt hơn.
-
-Sau này có thể đóng gói phần web này thành APK/kiosk để chạy nền ổn định hơn.
-
-## Test nhanh
-
-Sau khi VieNeu `8765`, loaTTS `8780` và điện thoại loa đều đang hoạt động:
-
-```cmd
-test_speak.bat
-```
-
-Hoặc dùng curl:
-
-```cmd
-curl -X POST http://127.0.0.1:8780/speak -H "Content-Type: application/json" -d "{\"text\":\"Xin chào, cảm ơn bạn vừa follow!\",\"priority\":20,\"style\":\"tu_nhien\"}"
-```
-
-## API cho middleware
-
-### POST `/speak`
-
-Thêm một câu vào hàng đợi.
-
-```json
-{
-  "text": "Cảm ơn bạn vừa gửi quà!",
-  "voice": "Minh Đức",
-  "style": "tu_nhien",
-  "priority": 10,
-  "temperature": 0.78,
-  "top_k": 25,
-  "top_p": 0.93,
-  "max_chars": 180,
-  "repetition_penalty": 1.2,
-  "apply_watermark": false
-}
-```
-
-Các field tối thiểu:
-
-```json
-{
-  "text": "Xin chào mọi người"
-}
-```
-
-Priority số nhỏ hơn được ưu tiên trước.
-
-Gợi ý cho TikTok LIVE:
+Repo middleware chuẩn:
 
 ```text
-GIFT    = 10
-FOLLOW  = 20
-COMMENT = 50
-JOIN    = 80
+https://github.com/banupham/tiktok_live_cmd_active_viewers_v9.git
 ```
 
-### GET `/status`
+Không cần sửa giao thức.
 
-Trả trạng thái:
-
-- số loa đang kết nối;
-- loa chính;
-- queue;
-- job hiện tại;
-- số câu đã đọc;
-- số lần lỗi;
-- địa chỉ TTS server.
-
-### POST `/clear`
-
-Xóa các câu còn đang chờ trong queue.
-
-Không cắt câu đang phát.
-
-### POST `/stop`
-
-Dừng câu đang phát hiện tại.
-
-### GET `/api/voices`
-
-Proxy danh sách giọng từ VieNeu TTS server.
-
-### GET `/api/tts-health`
-
-Kiểm tra trạng thái VieNeu TTS server.
-
-## Cơ chế queue
-
-`loaTTS` giữ priority queue ở server.
-
-Luồng:
-
-```text
-/speak
-  -> queue
-  -> chờ loa chính online
-  -> WebSocket gửi job
-  -> điện thoại gọi /api/stream
-  -> loaTTS proxy /tts/stream từ VieNeu
-  -> điện thoại phát PCM16 realtime
-  -> báo completed
-  -> server lấy job tiếp theo
-```
-
-Nếu loa mất kết nối trong lúc phát, job có thể được thử lại. Mặc định tối đa 2 lần.
-
-Cấu hình:
+Mở loaTTS trước:
 
 ```cmd
-set LOA_TTS_MAX_RETRIES=2
-```
-
-## Dùng TTS server ở máy khác
-
-Mặc định `loaTTS` tìm VieNeu tại:
-
-```text
-http://127.0.0.1:8765
-```
-
-Nếu VieNeu nằm ở máy khác:
-
-```cmd
-set LOA_TTS_SERVER=http://192.168.1.10:8765
 start.bat
 ```
 
-Lưu ý TTS server bên kia phải cho phép truy cập qua LAN.
-
-## Cấu hình cổng
+Sau đó tại repo middleware chạy:
 
 ```cmd
-set LOA_TTS_HOST=0.0.0.0
-set LOA_TTS_PORT=8780
-set LOA_TTS_SERVER=http://127.0.0.1:8765
-set LOA_TTS_MAX_RETRIES=2
+start_middleware_to_game.bat ten_tiktok
+```
+
+Ví dụ:
+
+```cmd
+start_middleware_to_game.bat ngocky.ne
+```
+
+File middleware đã dùng mặc định:
+
+```text
+GAME_EVENT_HOST=127.0.0.1
+GAME_EVENT_PORT=9000
+GAME_EVENT_PATH=/tiktok-event
+WEBHOOK_URLS=http://127.0.0.1:9000/tiktok-event
+```
+
+`loaTTS- /health` trả đúng contract handshake mà middleware cần, gồm:
+
+```text
+ok=true
+service=game-event-server
+instanceId
+pid
+eventPath=/tiktok-event
+```
+
+## Event nào được đọc?
+
+Chỉ payload dạng:
+
+```json
+{
+  "eventType": "comment",
+  "user": {
+    "id": "duong123",
+    "uniqueId": "duong123",
+    "displayName": "Dương"
+  },
+  "payload": {
+    "text": "xin chào",
+    "normalizedText": "XIN CHÀO"
+  }
+}
+```
+
+Text đem đọc lấy từ:
+
+```text
+payload.text
+```
+
+`join`, `follow`, `like`, `gift` vẫn trả HTTP 2xx nhưng bị đánh dấu `ignored`, để middleware không retry và không báo lỗi webhook.
+
+## Chống trễ khi LIVE đông comment
+
+Mặc định:
+
+```text
+queue tối đa      30 comment
+comment quá 20s   bỏ qua
+```
+
+Mục tiêu là không để loa đọc những comment đã quá cũ khi chat dồn nhanh.
+
+Có thể đổi trước khi chạy:
+
+```cmd
+set LOA_TTS_QUEUE_MAX=50
+set LOA_TTS_COMMENT_MAX_AGE=30
 start.bat
 ```
 
-## Tự chạy cùng Windows
+Đặt `LOA_TTS_COMMENT_MAX_AGE=0` nếu không muốn bỏ comment cũ.
 
-Sau khi cài xong:
+## Cấu hình model
+
+Mặc định:
+
+```cmd
+set LOA_TTS_PRECISION=int8
+set LOA_TTS_THREADS=0
+set LOA_TTS_WARMUP=1
+start.bat
+```
+
+CPU chất lượng cao hơn nhưng nặng hơn:
+
+```cmd
+set LOA_TTS_PRECISION=fp32
+start.bat
+```
+
+Web lưu lựa chọn giọng vào `settings.json` local. File này nằm trong `.gitignore`.
+
+## Test không cần mở TikTok
+
+Khi server và điện thoại loa đã chạy:
+
+```cmd
+test_comment.bat
+```
+
+File này gửi một event `comment` giả lập đúng schema middleware vào:
+
+```text
+POST http://127.0.0.1:9000/tiktok-event
+```
+
+Nếu hệ thống đúng, điện thoại sẽ đọc:
+
+```text
+Xin chào, đây là comment TikTok thử nghiệm
+```
+
+## Theo dõi trạng thái
+
+```cmd
+curl http://127.0.0.1:9000/status
+```
+
+Có các chỉ số:
+
+- model đã load chưa;
+- số comment đã nhận;
+- queue hiện tại;
+- comment đang đọc;
+- số comment đã đọc;
+- số event non-comment đã bỏ qua;
+- số comment bị bỏ vì queue đầy hoặc quá cũ;
+- loa chính hiện tại.
+
+## Tự khởi động cùng Windows
 
 ```cmd
 install_autostart.bat
 ```
 
-Gỡ autostart:
+Gỡ:
 
 ```cmd
 remove_autostart.bat
 ```
 
-Autostart chỉ khởi động server `8780`. Điện thoại vẫn cần mở trang và bật loa.
-
-## Tích hợp Python middleware
-
-```python
-import requests
-
-requests.post(
-    "http://127.0.0.1:8780/speak",
-    json={
-        "text": "Cảm ơn bạn vừa follow!",
-        "voice": "Minh Đức",
-        "style": "tu_nhien",
-        "priority": 20,
-    },
-    timeout=3,
-)
-```
-
-Middleware không cần biết WebSocket, PCM hay Web Audio. Nó chỉ cần gửi text vào `/speak`.
-
-## File chính
+## Cấu trúc
 
 ```text
-app.py                    server + queue + WebSocket + stream proxy
-web/index.html            giao diện loa trên điện thoại/laptop
-requirements.txt          dependency
-install_windows.bat       cài môi trường
-start.bat                 chạy server 8780
-allow_firewall.bat        mở LAN port 8780
-test_speak.bat            gửi câu test
-install_autostart.bat     tự chạy server cùng Windows
-remove_autostart.bat      gỡ autostart
+app.py                  VieNeu + webhook + queue + WebSocket + PCM stream
+web/index.html           giao diện loa TikTok
+requirements.txt         VieNeu và runtime
+start.bat                chạy server 9000
+install_windows.bat      tạo .venv và cài dependency
+allow_firewall.bat       mở port 9000 cho LAN
+test_comment.bat         giả lập TikTok COMMENT
+install_autostart.bat    tự chạy cùng Windows
+remove_autostart.bat     gỡ autostart
 ```
