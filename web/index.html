@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Loa TTS Thường Trực</title>
 <style>
-:root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}*{box-sizing:border-box}body{margin:0;background:#090b0f;color:#edf2f7}.wrap{width:min(920px,calc(100% - 24px));margin:0 auto;padding:22px 0 48px}.title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.title h1{font-size:25px;margin:0}.pill{font-size:12px;padding:6px 10px;border:1px solid #303845;border-radius:999px;color:#aab5c5}.panel{background:#11151c;border:1px solid #242b35;border-radius:16px;padding:15px;margin-bottom:14px}.speaker{display:grid;grid-template-columns:2fr 1fr;gap:10px}.grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}.advanced{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:10px}label{display:block;font-size:12px;color:#9ba7b7;margin-bottom:6px}input,select,textarea,button{width:100%;border:1px solid #303846;background:#151a22;color:#edf2f7;border-radius:10px;padding:10px 12px;font:inherit}textarea{min-height:130px;resize:vertical;margin-top:10px}button{font-weight:700;cursor:pointer}.primary{background:#263550}.danger{background:#2a1b21}.big{min-height:52px;font-size:17px}.buttons{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-top:10px}.status{margin-top:10px;background:#0d1117;border:1px solid #252c36;border-radius:10px;padding:11px 12px;color:#b9c3d1;font-size:13px;line-height:1.45}.hint{font-size:12px;color:#7f8b9a;line-height:1.5;margin-top:10px}.ok{color:#8ed49f}.bad{color:#ef9a9a}.active{color:#86b7ff}.muted{opacity:.55}.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}@media(max-width:760px){.speaker,.grid,.advanced,.buttons{grid-template-columns:1fr}.title{align-items:flex-start;flex-direction:column}.wrap{padding-top:14px}}
+:root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}*{box-sizing:border-box}body{margin:0;background:#090b0f;color:#edf2f7}.wrap{width:min(920px,calc(100% - 24px));margin:0 auto;padding:22px 0 48px}.title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.title h1{font-size:25px;margin:0}.pill{font-size:12px;padding:6px 10px;border:1px solid #303845;border-radius:999px;color:#aab5c5}.panel{background:#11151c;border:1px solid #242b35;border-radius:16px;padding:15px;margin-bottom:14px}.speaker{display:grid;grid-template-columns:2fr 1fr;gap:10px}.grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}.advanced{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:10px}label{display:block;font-size:12px;color:#9ba7b7;margin-bottom:6px}input,select,textarea,button{width:100%;border:1px solid #303846;background:#151a22;color:#edf2f7;border-radius:10px;padding:10px 12px;font:inherit}textarea{min-height:130px;resize:vertical;margin-top:10px}button{font-weight:700;cursor:pointer}.primary{background:#263550}.danger{background:#2a1b21}.big{min-height:52px;font-size:17px}.buttons{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-top:10px}.status{margin-top:10px;background:#0d1117;border:1px solid #252c36;border-radius:10px;padding:11px 12px;color:#b9c3d1;font-size:13px;line-height:1.45}.hint{font-size:12px;color:#7f8b9a;line-height:1.5;margin-top:10px}.ok{color:#8ed49f}.bad{color:#ef9a9a}@media(max-width:760px){.speaker,.grid,.advanced,.buttons{grid-template-columns:1fr}.title{align-items:flex-start;flex-direction:column}.wrap{padding-top:14px}}
 </style>
 </head>
 <body>
@@ -17,14 +17,8 @@
 
   <div class="panel">
     <div class="speaker">
-      <div>
-        <label>Tên thiết bị loa</label>
-        <input id="deviceName" value="Điện thoại loa TTS">
-      </div>
-      <div>
-        <label>Âm lượng</label>
-        <input id="volume" type="range" min="0" max="150" value="100">
-      </div>
+      <div><label>Tên thiết bị loa</label><input id="deviceName" value="Điện thoại loa TTS"></div>
+      <div><label>Âm lượng</label><input id="volume" type="range" min="0" max="150" value="100"></div>
     </div>
     <div class="buttons">
       <button class="primary big" id="enable">🔊 BẬT LOA THƯỜNG TRỰC</button>
@@ -32,7 +26,7 @@
       <button id="release">Tắt loa</button>
     </div>
     <div class="status" id="speakerStatus">Đang kết nối tới server...</div>
-    <div class="hint">Khi bật loa, thiết bị này sẽ giành quyền phát. Nếu mở trên điện thoại khác và bấm BẬT LOA, quyền phát sẽ chuyển sang thiết bị mới.</div>
+    <div class="hint">Thiết bị bấm BẬT LOA gần nhất sẽ là loa chính. Web cố giữ màn hình sáng bằng Screen Wake Lock khi trình duyệt hỗ trợ.</div>
   </div>
 
   <div class="panel">
@@ -59,35 +53,33 @@
 </div>
 <script>
 const $=id=>document.getElementById(id);
-const DEVICE_ID_KEY='loa_tts_device_id';
-const DEVICE_NAME_KEY='loa_tts_device_name';
-let deviceId=localStorage.getItem(DEVICE_ID_KEY);
-if(!deviceId){deviceId='web-'+crypto.randomUUID().slice(0,8);localStorage.setItem(DEVICE_ID_KEY,deviceId)}
-$('deviceName').value=localStorage.getItem(DEVICE_NAME_KEY)||$('deviceName').value;
+const ID_KEY='loa_tts_device_id',NAME_KEY='loa_tts_device_name';
+let deviceId=localStorage.getItem(ID_KEY);
+if(!deviceId){deviceId='web-'+crypto.randomUUID().slice(0,8);localStorage.setItem(ID_KEY,deviceId)}
+$('deviceName').value=localStorage.getItem(NAME_KEY)||$('deviceName').value;
 let ws=null,reconnectTimer=null,heartbeatTimer=null,audioCtx=null,gainNode=null,activeAbort=null,activeSources=[],enabled=false,wakeLock=null,currentJobId=null,playToken=0;
 
-function setSocketBadge(text,cls=''){const e=$('socketBadge');e.textContent=text;e.className='pill '+cls}
-function setSpeakerStatus(text){$('speakerStatus').textContent=text}
-function wsSend(obj){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(obj))}
+function badge(text,cls=''){const e=$('socketBadge');e.textContent=text;e.className='pill '+cls}
+function speakerText(text){$('speakerStatus').textContent=text}
+function wsSend(data){if(ws&&ws.readyState===WebSocket.OPEN)ws.send(JSON.stringify(data))}
 
 function connectWs(){
   if(ws&&(ws.readyState===WebSocket.OPEN||ws.readyState===WebSocket.CONNECTING))return;
   const proto=location.protocol==='https:'?'wss':'ws';
   const name=$('deviceName').value.trim()||'Loa web';
-  const url=`${proto}://${location.host}/ws/speaker?device_id=${encodeURIComponent(deviceId)}&name=${encodeURIComponent(name)}`;
-  ws=new WebSocket(url);
-  setSocketBadge('WebSocket: đang nối...');
-  ws.onopen=()=>{setSocketBadge('WebSocket: online','ok');if(enabled)wsSend({type:'claim'});clearInterval(heartbeatTimer);heartbeatTimer=setInterval(()=>wsSend({type:'ping'}),20000)};
-  ws.onmessage=async(ev)=>{
-    let msg;try{msg=JSON.parse(ev.data)}catch{return}
-    if(msg.type==='hello'){if(!enabled)setSpeakerStatus(msg.message||'Đã kết nối. Hãy bật loa.')}
-    else if(msg.type==='claimed'){enabled=true;setSpeakerStatus('✅ Thiết bị này đang là LOA CHÍNH. Sẵn sàng nhận câu tự động.');$('enable').textContent='✅ LOA ĐANG BẬT'}
-    else if(msg.type==='released'){enabled=false;setSpeakerStatus('Loa đã tắt. Vẫn giữ kết nối chờ bật lại.');$('enable').textContent='🔊 BẬT LOA THƯỜNG TRỰC'}
-    else if(msg.type==='speak'){currentJobId=msg.job.id;await playJob(msg.job)}
-    else if(msg.type==='stop'){stopLocal(false);setSpeakerStatus('Đã dừng câu hiện tại: '+(msg.reason||''))}
+  ws=new WebSocket(`${proto}://${location.host}/ws/speaker?device_id=${encodeURIComponent(deviceId)}&name=${encodeURIComponent(name)}`);
+  badge('WebSocket: đang nối...');
+  ws.onopen=()=>{badge('WebSocket: online','ok');clearInterval(heartbeatTimer);heartbeatTimer=setInterval(()=>wsSend({type:'ping'}),20000);if(enabled)wsSend({type:'claim'})};
+  ws.onmessage=async event=>{
+    let msg;try{msg=JSON.parse(event.data)}catch{return}
+    if(msg.type==='hello'){if(!enabled)speakerText(msg.message||'Đã kết nối. Hãy bật loa.')}
+    else if(msg.type==='claimed'){enabled=true;$('enable').textContent='✅ LOA ĐANG BẬT';speakerText('✅ Thiết bị này đang là LOA CHÍNH. Đang chờ câu từ middleware...')}
+    else if(msg.type==='released'){enabled=false;$('enable').textContent='🔊 BẬT LOA THƯỜNG TRỰC';speakerText('Loa đã tắt. WebSocket vẫn kết nối.')}
+    else if(msg.type==='speak'){await playJob(msg.job)}
+    else if(msg.type==='stop'){stopLocal(false);speakerText('Đã dừng câu hiện tại: '+(msg.reason||''))}
   };
-  ws.onclose=()=>{setSocketBadge('WebSocket: mất kết nối','bad');clearInterval(heartbeatTimer);if(reconnectTimer)clearTimeout(reconnectTimer);reconnectTimer=setTimeout(connectWs,2000)};
-  ws.onerror=()=>setSocketBadge('WebSocket: lỗi','bad');
+  ws.onclose=()=>{badge('WebSocket: mất kết nối','bad');clearInterval(heartbeatTimer);stopLocal(false);clearTimeout(reconnectTimer);reconnectTimer=setTimeout(connectWs,2000)};
+  ws.onerror=()=>badge('WebSocket: lỗi','bad');
 }
 
 async function ensureAudio(){
@@ -95,67 +87,83 @@ async function ensureAudio(){
   gainNode.gain.value=Number($('volume').value||100)/100;
   if(audioCtx.state==='suspended')await audioCtx.resume();
 }
-
-async function requestWakeLock(){
-  try{if('wakeLock'in navigator){wakeLock=await navigator.wakeLock.request('screen')}}catch(e){console.warn('Wake Lock không khả dụng',e)}
-}
-async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null}}catch(e){}}
+async function requestWakeLock(){try{if('wakeLock'in navigator)wakeLock=await navigator.wakeLock.request('screen')}catch(e){console.warn(e)}}
+async function releaseWakeLock(){try{if(wakeLock){await wakeLock.release();wakeLock=null}}catch{}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&enabled)requestWakeLock()});
 
-function merge(a,b){if(!a||!a.length)return b;const out=new Uint8Array(a.length+b.length);out.set(a);out.set(b,a.length);return out}
+function mergeBytes(a,b){if(!a||!a.length)return b;const out=new Uint8Array(a.length+b.length);out.set(a);out.set(b,a.length);return out}
 function stopLocal(report=true){
-  playToken++;if(activeAbort){activeAbort.abort();activeAbort=null}for(const s of activeSources){try{s.stop()}catch{}}activeSources=[];
-  if(report&&currentJobId)wsSend({type:'failed',job_id:currentJobId,error:'stopped locally'});currentJobId=null;
+  playToken++;
+  if(activeAbort){activeAbort.abort();activeAbort=null}
+  for(const src of activeSources){try{src.stop()}catch{}}
+  activeSources=[];
+  if(report&&currentJobId)wsSend({type:'failed',job_id:currentJobId,error:'stopped locally'});
+  currentJobId=null;
 }
 
 async function playJob(job){
-  const token=++playToken;stopLocal(false);currentJobId=job.id;
+  stopLocal(false);
+  const token=++playToken;
+  currentJobId=job.id;
   try{
     await ensureAudio();
     activeAbort=new AbortController();
-    setSpeakerStatus(`⏳ Đang lấy audio: ${job.text.slice(0,100)}`);
+    speakerText(`⏳ Đang lấy audio: ${job.text.slice(0,100)}`);
     const payload={text:job.text,voice:job.voice||null,style:job.style||'tu_nhien',priority:Number(job.priority||50),temperature:Number(job.temperature||0.78),top_k:Number(job.top_k||25),top_p:Number(job.top_p||0.93),max_chars:Number(job.max_chars||180),repetition_penalty:Number(job.repetition_penalty||1.2),apply_watermark:Boolean(job.apply_watermark)};
     const r=await fetch('/api/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:activeAbort.signal});
     if(!r.ok)throw new Error(await r.text()||`HTTP ${r.status}`);
     if(!r.body)throw new Error('Trình duyệt không hỗ trợ streaming response');
-    const sr=Number(r.headers.get('X-TTS-Sample-Rate')||48000),fmt=(r.headers.get('X-TTS-Format')||'s16le').toLowerCase();
-    if(fmt!=='s16le')throw new Error('Format audio không hỗ trợ: '+fmt);
-    const reader=r.body.getReader();let carry=new Uint8Array(0),next=audioCtx.currentTime+0.14,first=true;
+    const sampleRate=Number(r.headers.get('X-TTS-Sample-Rate')||48000);
+    const format=(r.headers.get('X-TTS-Format')||'s16le').toLowerCase();
+    if(format!=='s16le')throw new Error('Format audio không hỗ trợ: '+format);
+    const reader=r.body.getReader();
+    let carry=new Uint8Array(0),nextTime=audioCtx.currentTime+0.14,first=true;
     while(true){
-      const {done,value}=await reader.read();if(done)break;if(token!==playToken)return;if(!value||!value.length)continue;
-      const data=merge(carry,value),n=data.length-data.length%2;carry=data.slice(n);if(!n)continue;
-      const count=n/2,f=new Float32Array(count),view=new DataView(data.buffer,data.byteOffset,n);for(let i=0;i<count;i++)f[i]=view.getInt16(i*2,true)/32768;
-      const buffer=audioCtx.createBuffer(1,count,sr);buffer.copyToChannel(f,0);const src=audioCtx.createBufferSource();src.buffer=buffer;src.connect(gainNode);
-      if(next<audioCtx.currentTime+0.05)next=audioCtx.currentTime+0.08;src.start(next);next+=buffer.duration;activeSources.push(src);src.onended=()=>activeSources=activeSources.filter(x=>x!==src);
-      if(first){first=false;wsSend({type:'started',job_id:job.id});setSpeakerStatus(`🔊 Đang đọc: ${job.text.slice(0,140)}`)}
+      const {done,value}=await reader.read();
+      if(done)break;
+      if(token!==playToken)return;
+      if(!value||!value.length)continue;
+      const data=mergeBytes(carry,value),usable=data.length-data.length%2;
+      carry=data.slice(usable);
+      if(!usable)continue;
+      const count=usable/2,floats=new Float32Array(count),view=new DataView(data.buffer,data.byteOffset,usable);
+      for(let i=0;i<count;i++)floats[i]=view.getInt16(i*2,true)/32768;
+      const buffer=audioCtx.createBuffer(1,count,sampleRate);buffer.copyToChannel(floats,0);
+      const src=audioCtx.createBufferSource();src.buffer=buffer;src.connect(gainNode);
+      if(nextTime<audioCtx.currentTime+0.05)nextTime=audioCtx.currentTime+0.08;
+      src.start(nextTime);nextTime+=buffer.duration;activeSources.push(src);src.onended=()=>activeSources=activeSources.filter(x=>x!==src);
+      if(first){first=false;wsSend({type:'started',job_id:job.id});speakerText(`🔊 Đang đọc: ${job.text.slice(0,140)}`)}
     }
-    const remain=Math.max(0,next-audioCtx.currentTime);if(remain)await new Promise(ok=>setTimeout(ok,remain*1000));
-    if(token===playToken){activeAbort=null;currentJobId=null;wsSend({type:'completed',job_id:job.id});setSpeakerStatus('✅ Đọc xong. Đang chờ câu tiếp theo...')}
+    const remain=Math.max(0,nextTime-audioCtx.currentTime);
+    if(remain)await new Promise(resolve=>setTimeout(resolve,remain*1000));
+    if(token===playToken){activeAbort=null;currentJobId=null;wsSend({type:'completed',job_id:job.id});speakerText('✅ Đọc xong. Đang chờ câu tiếp theo...')}
   }catch(e){
     if(e&&e.name==='AbortError')return;
-    activeAbort=null;const id=currentJobId||job.id;currentJobId=null;wsSend({type:'failed',job_id:id,error:String(e)});setSpeakerStatus('❌ Lỗi phát: '+e);
+    activeAbort=null;
+    const jobId=currentJobId||job.id;currentJobId=null;
+    wsSend({type:'failed',job_id:jobId,error:String(e)});
+    speakerText('❌ Lỗi phát: '+e);
   }
 }
 
-function testPayload(){return{text:$('text').value.trim(),voice:$('voice').value||null,style:$('style').value,priority:Number($('priority').value||50),temperature:Number($('temperature').value||0.78),top_k:Number($('topK').value||25),top_p:Number($('topP').value||0.93),max_chars:Number($('maxChars').value||180),repetition_penalty:Number($('repeatPenalty').value||1.2),apply_watermark:false}}
+function formPayload(){return{text:$('text').value.trim(),voice:$('voice').value||null,style:$('style').value,priority:Number($('priority').value||50),temperature:Number($('temperature').value||0.78),top_k:Number($('topK').value||25),top_p:Number($('topP').value||0.93),max_chars:Number($('maxChars').value||180),repetition_penalty:Number($('repeatPenalty').value||1.2),apply_watermark:false}}
 
 async function loadVoices(){
-  try{const r=await fetch('/api/voices',{cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(JSON.stringify(d));$('voice').innerHTML='<option value="">Mặc định</option>';for(const v of d){const o=document.createElement('option');o.value=v.id;o.textContent=v.label||v.id;$('voice').appendChild(o)}}catch(e){$('voice').innerHTML='<option value="">Không tải được giọng</option>'}
+  try{const r=await fetch('/api/voices',{cache:'no-store'}),data=await r.json();if(!r.ok)throw new Error(JSON.stringify(data));$('voice').innerHTML='<option value="">Mặc định</option>';for(const v of data){const o=document.createElement('option');o.value=v.id;o.textContent=v.label||v.id;$('voice').appendChild(o)}}catch(e){$('voice').innerHTML='<option value="">Không tải được giọng</option>'}
 }
-
 async function refreshStatus(){
-  try{const r=await fetch('/status',{cache:'no-store'}),d=await r.json();const active=d.active_speaker_name?`${d.active_speaker_name} (${d.active_speaker_id})`:'chưa có';$('serverStatus').textContent=`TTS: ${d.tts_server} · Loa kết nối: ${d.connected_speakers} · Loa chính: ${active} · Queue: ${d.queue_size} · Đã đọc: ${d.played} · Lỗi: ${d.failed}${d.current_text?' · Đang xử lý: '+d.current_text.slice(0,80):''}`}
-  catch(e){$('serverStatus').textContent='Không đọc được trạng thái server: '+e}
+  try{const r=await fetch('/status',{cache:'no-store'}),d=await r.json();const active=d.active_speaker_name?`${d.active_speaker_name} (${d.active_speaker_id})`:'chưa có';$('serverStatus').textContent=`TTS: ${d.tts_server} · Loa kết nối: ${d.connected_speakers} · Loa chính: ${active} · Queue: ${d.queue_size} · Đã đọc: ${d.played} · Lỗi: ${d.failed}${d.current_text?' · Đang xử lý: '+d.current_text.slice(0,80):''}`}catch(e){$('serverStatus').textContent='Không đọc được trạng thái server: '+e}
 }
 
-$('enable').addEventListener('click',async()=>{try{localStorage.setItem(DEVICE_NAME_KEY,$('deviceName').value.trim());await ensureAudio();await requestWakeLock();enabled=true;connectWs();if(ws&&ws.readyState===WebSocket.OPEN)wsSend({type:'claim'});setSpeakerStatus('Đang nhận quyền loa...')}catch(e){setSpeakerStatus('Không bật được loa: '+e)}});
-$('release').addEventListener('click',async()=>{enabled=false;stopLocal(false);wsSend({type:'release'});await releaseWakeLock();$('enable').textContent='🔊 BẬT LOA THƯỜNG TRỰC'});
-$('stop').addEventListener('click',async()=>{stopLocal(false);try{await fetch('/stop',{method:'POST'})}catch{}setSpeakerStatus('Đã yêu cầu dừng câu hiện tại.')});
-$('testSpeak').addEventListener('click',async()=>{const p=testPayload();if(!p.text){$('serverStatus').textContent='Hãy nhập câu test.';return}try{const r=await fetch('/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}),d=await r.json();if(!r.ok)throw new Error(JSON.stringify(d));$('serverStatus').textContent=`Đã thêm job ${d.id} vào queue.`;refreshStatus()}catch(e){$('serverStatus').textContent='Lỗi gửi test: '+e}});
+$('enable').addEventListener('click',async()=>{try{localStorage.setItem(NAME_KEY,$('deviceName').value.trim());await ensureAudio();await requestWakeLock();enabled=true;connectWs();if(ws&&ws.readyState===WebSocket.OPEN)wsSend({type:'claim'});speakerText('Đang nhận quyền loa...')}catch(e){speakerText('Không bật được loa: '+e)}});
+$('release').addEventListener('click',async()=>{try{await fetch('/stop',{method:'POST'})}catch{}stopLocal(false);enabled=false;wsSend({type:'release'});await releaseWakeLock();$('enable').textContent='🔊 BẬT LOA THƯỜNG TRỰC'});
+$('stop').addEventListener('click',async()=>{try{await fetch('/stop',{method:'POST'})}catch{}stopLocal(false);speakerText('Đã yêu cầu dừng câu hiện tại.')});
+$('testSpeak').addEventListener('click',async()=>{const p=formPayload();if(!p.text){$('serverStatus').textContent='Hãy nhập câu test.';return}try{const r=await fetch('/speak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}),d=await r.json();if(!r.ok)throw new Error(JSON.stringify(d));$('serverStatus').textContent=`Đã thêm job ${d.id} vào queue.`;refreshStatus()}catch(e){$('serverStatus').textContent='Lỗi gửi test: '+e}});
 $('clear').addEventListener('click',async()=>{try{const r=await fetch('/clear',{method:'POST'}),d=await r.json();$('serverStatus').textContent=`Đã xóa ${d.cleared||0} câu đang chờ.`;refreshStatus()}catch(e){$('serverStatus').textContent='Lỗi xóa queue: '+e}});
 $('refresh').addEventListener('click',refreshStatus);
 $('volume').addEventListener('input',()=>{if(gainNode)gainNode.gain.value=Number($('volume').value)/100});
-$('deviceName').addEventListener('change',()=>localStorage.setItem(DEVICE_NAME_KEY,$('deviceName').value.trim()));
+$('deviceName').addEventListener('change',()=>localStorage.setItem(NAME_KEY,$('deviceName').value.trim()));
+
 connectWs();loadVoices();refreshStatus();setInterval(refreshStatus,2000);
 </script>
 </body>
