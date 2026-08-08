@@ -109,6 +109,9 @@ async def _speaker_worker() -> None:
     global current_job, current_started_at, played_count, failed_count
 
     while True:
+        # Giữ job trong queue cho tới khi thật sự có loa chính online.
+        # Nhờ vậy /status và /clear phản ánh đúng các câu đang chờ.
+        await active_speaker_event.wait()
         priority, _, job = await queue.get()
         try:
             while True:
