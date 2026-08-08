@@ -72,6 +72,24 @@ core._normalize_abbreviations = _patched_normalize_abbreviations
 core.SERVER_VERSION = "2.3"
 
 
+# Update the existing web help text without duplicating the whole HTML file here.
+try:
+    html = core.WEB_FILE.read_text(encoding="utf-8")
+    html = html.replace(
+        "Cụm từ không đọc: mỗi dòng một cụm",
+        "Cụm từ cần xóa chính xác: mỗi dòng một cụm",
+    )
+    html = html.replace(
+        "Chỉ cần comment chứa một trong các cụm này thì sẽ bị bỏ trước khi vào queue.",
+        "Chỉ xóa đúng cụm khớp; phần comment còn lại vẫn được đọc. Có dấu phải khớp dấu, không khớp một phần của từ/số dài hơn.",
+    )
+    runtime_web = core.BASE_DIR / ".runtime_index.html"
+    runtime_web.write_text(html, encoding="utf-8")
+    core.WEB_FILE = runtime_web
+except Exception as exc:
+    print(f"[WEB] Không cập nhật được hướng dẫn bộ lọc: {exc}")
+
+
 # Small startup guard against over-broad matching.
 assert _remove_exact_blocked_phrases("hạng 2 có không chị", ["hạng 2"])[0] == "có không chị"
 assert _remove_exact_blocked_phrases("hang 2 có không chị", ["hạng 2"])[0] == "hang 2 có không chị"
