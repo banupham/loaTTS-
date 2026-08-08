@@ -2,7 +2,7 @@
 setlocal
 chcp 65001 >nul
 cd /d "%~dp0"
-title Loa TTS Thuong Truc
+title TikTok Comment TTS Speaker
 
 if not exist ".venv\Scripts\python.exe" (
     echo [LOI] Chua co .venv. Hay chay install_windows.bat truoc.
@@ -11,15 +11,23 @@ if not exist ".venv\Scripts\python.exe" (
 )
 
 if "%LOA_TTS_HOST%"=="" set LOA_TTS_HOST=0.0.0.0
-if "%LOA_TTS_PORT%"=="" set LOA_TTS_PORT=8780
-if "%LOA_TTS_SERVER%"=="" set LOA_TTS_SERVER=http://127.0.0.1:8765
-if "%LOA_TTS_MAX_RETRIES%"=="" set LOA_TTS_MAX_RETRIES=2
+if "%LOA_TTS_PORT%"=="" set LOA_TTS_PORT=9000
+if "%LOA_TTS_EVENT_PATH%"=="" set LOA_TTS_EVENT_PATH=/tiktok-event
+if "%LOA_TTS_PRECISION%"=="" set LOA_TTS_PRECISION=int8
+if "%LOA_TTS_THREADS%"=="" set LOA_TTS_THREADS=0
+if "%LOA_TTS_WARMUP%"=="" set LOA_TTS_WARMUP=1
+if "%LOA_TTS_QUEUE_MAX%"=="" set LOA_TTS_QUEUE_MAX=30
+if "%LOA_TTS_COMMENT_MAX_AGE%"=="" set LOA_TTS_COMMENT_MAX_AGE=20
 
 echo ============================================================
-echo  LOA TTS THUONG TRUC
+echo  TIKTOK COMMENT TTS - SELF CONTAINED
 echo ============================================================
-echo WEB/API = http://127.0.0.1:%LOA_TTS_PORT%
-echo TTS     = %LOA_TTS_SERVER%
+echo Web       : http://127.0.0.1:%LOA_TTS_PORT%
+echo Webhook   : http://127.0.0.1:%LOA_TTS_PORT%%LOA_TTS_EVENT_PATH%
+echo Health    : http://127.0.0.1:%LOA_TTS_PORT%/health
+echo Precision : %LOA_TTS_PRECISION%
+echo Queue max : %LOA_TTS_QUEUE_MAX%
+echo Max age   : %LOA_TTS_COMMENT_MAX_AGE%s
 echo.
 echo Dien thoai LAN: http://IP_MAY_CHU:%LOA_TTS_PORT%
 echo ============================================================
@@ -29,6 +37,6 @@ echo.
 set EXIT_CODE=%ERRORLEVEL%
 
 echo.
-echo Loa TTS da dung. Exit code: %EXIT_CODE%
+echo TikTok Comment TTS da dung. Exit code: %EXIT_CODE%
 pause
 exit /b %EXIT_CODE%
