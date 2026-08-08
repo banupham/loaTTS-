@@ -31,13 +31,54 @@ WARMUP = os.getenv("LOA_TTS_WARMUP", "1").strip().lower() not in {"0", "false", 
 QUEUE_MAX = max(1, int(os.getenv("LOA_TTS_QUEUE_MAX", "30")))
 COMMENT_MAX_AGE_SECONDS = max(0.0, float(os.getenv("LOA_TTS_COMMENT_MAX_AGE", "20")))
 EVENT_ID_CACHE = max(100, int(os.getenv("LOA_TTS_EVENT_ID_CACHE", "10000")))
-SERVER_VERSION = "2.1"
+SERVER_VERSION = "2.2"
 SERVER_INSTANCE_ID = uuid.uuid4().hex[:12]
 SERVER_SESSION_TOKEN = os.getenv("GAME_EVENT_INSTANCE_TOKEN", "").strip()
 SERVER_PID = os.getpid()
 
 if PRECISION not in {"int8", "fp32"}:
     raise RuntimeError("LOA_TTS_PRECISION chỉ hỗ trợ int8 hoặc fp32")
+
+
+DEFAULT_ABBREVIATIONS: dict[str, str] = {
+    "ko": "không",
+    "k0": "không",
+    "kh": "không",
+    "hk": "không",
+    "hok": "không",
+    "hong": "không",
+    "hông": "không",
+    "khum": "không",
+    "dc": "được",
+    "đc": "được",
+    "mn": "mọi người",
+    "mng": "mọi người",
+    "mk": "mình",
+    "mik": "mình",
+    "cx": "cũng",
+    "vs": "với",
+    "j": "gì",
+    "z": "vậy",
+    "ib": "nhắn tin",
+    "rep": "trả lời",
+    "trl": "trả lời",
+    "cmt": "bình luận",
+    "acc": "tài khoản",
+    "ae": "anh em",
+    "fl": "theo dõi",
+    "follow": "theo dõi",
+    "tym": "thả tim",
+    "thx": "cảm ơn",
+    "tks": "cảm ơn",
+    "thanks": "cảm ơn",
+    "pls": "làm ơn",
+    "fb": "Facebook",
+    "yt": "YouTube",
+    "ttok": "TikTok",
+    "oki": "ô kê",
+    "okie": "ô kê",
+    "oke": "ô kê",
+}
 
 
 class SpeakerSettings(BaseModel):
@@ -49,6 +90,9 @@ class SpeakerSettings(BaseModel):
     max_chars: int = Field(default=180, ge=50, le=1000)
     repetition_penalty: float = Field(default=1.2, ge=0.5, le=3.0)
     read_username: bool = False
+    normalize_abbreviations: bool = True
+    custom_replacements: dict[str, str] = Field(default_factory=dict)
+    blocked_phrases: list[str] = Field(default_factory=list)
 
 
 class CommentJob(BaseModel):
@@ -83,6 +127,7 @@ stats = {
     "webhook_requests": 0, "comments_received": 0, "comments_queued": 0,
     "comments_played": 0, "comments_failed": 0, "comments_dropped": 0,
     "comments_expired": 0, "comments_filtered_system": 0,
+    "comments_filtered_custom": 0, "comments_abbreviation_normalized": 0,
     "comments_cleaned_ui_prefix": 0, "ignored_non_comment": 0,
     "duplicate_events": 0, "last_webhook_at": None, "last_comment_at": None,
     "last_client_ip": None, "last_event_type": None, "last_health_handshake_at": None,
@@ -101,8 +146,42 @@ def now_iso() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
 
 
+def _sanitize_settings(value: SpeakerSettings) -> SpeakerSettings:
+    clean_replacements: dict[str, str] = {}
+    for raw_key, raw_value in value.custom_replacements.items():
+        key = re.sub(r"\s+", " ", str(raw_key or "")).strip()
+        replacement = re.sub(r"\s+", " ", str(raw_value or "")).strip()
+        if not key or not replacement:
+            continue
+        if len(key) > 60 or len(replacement) > 120:
+            continue
+        clean_replacements[key] = replacement
+        if len(clean_replacements) >= 200:
+            break
+
+    clean_blocked: list[str] = []
+    seen: set[str] = set()
+    for raw_phrase in value.blocked_phrases:
+        phrase = re.sub(r"\s+", " ", str(raw_phrase or "")).strip()
+        marker = phrase.casefold()
+        if not phrase or marker in seen or len(phrase) > 160:
+            continue
+        seen.add(marker)
+        clean_blocked.append(phrase)
+        if len(clean_blocked) >= 200:
+            break
+
+    return value.model_copy(update={
+        "custom_replacements": clean_replacements,
+        "blocked_phrases": clean_blocked,
+    })
+
+
 def _save_settings() -> None:
-    SETTINGS_FILE.write_text(json.dumps(settings.model_dump(), ensure_ascii=False, indent=2), encoding="utf-8")
+    SETTINGS_FILE.write_text(
+        json.dumps(settings.model_dump(), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
 
 def _load_settings() -> None:
@@ -111,7 +190,10 @@ def _load_settings() -> None:
         _save_settings()
         return
     try:
-        settings = SpeakerSettings.model_validate(json.loads(SETTINGS_FILE.read_text(encoding="utf-8")))
+        loaded = SpeakerSettings.model_validate(
+            json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+        )
+        settings = _sanitize_settings(loaded)
     except Exception as exc:
         print(f"[SETTINGS] Không đọc được settings.json, dùng mặc định: {exc}")
         settings = SpeakerSettings()
@@ -165,9 +247,40 @@ def _is_system_comment(text: str) -> bool:
     return bool(value) and any(p.search(value) for p in SYSTEM_COMMENT_PATTERNS)
 
 
+def _is_custom_blocked(text: str, cfg: SpeakerSettings) -> Optional[str]:
+    folded = text.casefold()
+    for phrase in cfg.blocked_phrases:
+        if phrase.casefold() in folded:
+            return phrase
+    return None
+
+
+def _replace_phrase(text: str, source: str, target: str) -> tuple[str, int]:
+    pattern = re.compile(rf"(?<!\w){re.escape(source)}(?!\w)", re.I)
+    return pattern.subn(lambda _: target, text)
+
+
+def _normalize_abbreviations(text: str, cfg: SpeakerSettings) -> tuple[str, int]:
+    if not cfg.normalize_abbreviations:
+        return text, 0
+
+    rules = dict(DEFAULT_ABBREVIATIONS)
+    for key, value in cfg.custom_replacements.items():
+        rules[key] = value
+
+    output = text
+    total = 0
+    for source in sorted(rules, key=len, reverse=True):
+        output, count = _replace_phrase(output, source, rules[source])
+        total += count
+
+    output = re.sub(r"\s+", " ", output).strip()
+    return output, total
+
+
 def _comment_to_tts_text(job: CommentJob) -> str:
     with settings_lock:
-        cfg = settings.model_copy()
+        cfg = settings.model_copy(deep=True)
     return f"{job.display_name} bình luận: {job.text}" if cfg.read_username and job.display_name else job.text
 
 
@@ -298,7 +411,7 @@ async def lifespan(app: FastAPI):
     _validate_voice(settings.voice)
     _warmup_model()
     worker_task = asyncio.create_task(_speaker_worker(), name="tiktok-comment-tts-worker")
-    print("[READY] Chỉ đọc COMMENT; lọc chia sẻ LIVE và rác số UI đầu comment.")
+    print("[READY] Chỉ đọc COMMENT; chuẩn hóa viết tắt và lọc câu hệ thống trước TTS.")
     yield
     if worker_task:
         worker_task.cancel()
@@ -364,7 +477,9 @@ def voices():
 @app.get("/api/settings")
 def get_settings():
     with settings_lock:
-        return settings.model_dump()
+        payload = settings.model_dump()
+    payload["default_abbreviations"] = DEFAULT_ABBREVIATIONS
+    return payload
 
 
 @app.post("/api/settings")
@@ -373,6 +488,7 @@ def update_settings(req: SpeakerSettings):
     if req.style not in {"tu_nhien", "doc_truyen", "tin_tuc"}:
         raise HTTPException(status_code=400, detail="style không hợp lệ")
     _validate_voice(req.voice)
+    req = _sanitize_settings(req)
     with settings_lock:
         settings = req
         _save_settings()
@@ -405,10 +521,33 @@ async def tiktok_event(request: Request):
     text, removed_ui_number = _normalize_comment_text(payload.get("text"))
     if not text:
         return {"ok": True, "ignored": True, "reason": "empty_comment"}
+
     if _is_system_comment(text):
         stats["comments_filtered_system"] += 1
         print(f"[FILTER] Bỏ dòng hệ thống: {text}")
         return {"ok": True, "ignored": True, "reason": "system_share_message", "eventId": event_id or None}
+
+    with settings_lock:
+        cfg = settings.model_copy(deep=True)
+
+    blocked_by = _is_custom_blocked(text, cfg)
+    if blocked_by:
+        stats["comments_filtered_custom"] += 1
+        print(f"[FILTER] Bỏ comment vì khớp cụm tự thêm '{blocked_by}': {text}")
+        return {
+            "ok": True, "ignored": True, "reason": "custom_blocked_phrase",
+            "matched": blocked_by, "eventId": event_id or None,
+        }
+
+    normalized_text, replacement_count = _normalize_abbreviations(text, cfg)
+    if replacement_count:
+        stats["comments_abbreviation_normalized"] += 1
+        print(f"[TEXT] Chuẩn hóa {replacement_count} viết tắt: {text} -> {normalized_text}")
+    text = normalized_text
+
+    if not text:
+        return {"ok": True, "ignored": True, "reason": "empty_after_normalize"}
+
     if removed_ui_number:
         stats["comments_cleaned_ui_prefix"] += 1
         print(f"[FILTER] Đã bỏ số UI đầu comment -> {text}")
@@ -430,6 +569,7 @@ async def tiktok_event(request: Request):
         "ok": True, "accepted": True, "commentOnly": True,
         "eventId": event_id or None, "jobId": job.id,
         "queueSize": comment_queue.qsize(), "cleanedUiPrefix": removed_ui_number,
+        "abbreviationReplacements": replacement_count,
         "instanceId": SERVER_INSTANCE_ID, "pid": SERVER_PID,
     }
 
@@ -474,7 +614,7 @@ def stream_comment_audio(job_id: str, device_id: str):
     job = current_job
     text = _comment_to_tts_text(job)
     with settings_lock:
-        cfg = settings.model_copy()
+        cfg = settings.model_copy(deep=True)
     _validate_voice(cfg.voice)
     sample_rate = int(tts.sample_rate)
 
