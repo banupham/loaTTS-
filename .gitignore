@@ -4,5 +4,6 @@ __pycache__/
 *.pyo
 .env
 settings.json
+.runtime_index.html
 .DS_Store
 Thumbs.db
