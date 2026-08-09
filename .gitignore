@@ -5,7 +5,9 @@ __pycache__/
 .env
 settings.json
 .playback_speed.json
+.emoji_rules.json
 .runtime_index.html
 .runtime_speed_index.html
+.runtime_emoji_index.html
 .DS_Store
 Thumbs.db
