@@ -6,6 +6,7 @@ __pycache__/
 settings.json
 .playback_speed.json
 .emoji_rules.json
+.clarity_preset_v1
 .runtime_index.html
 .runtime_speed_index.html
 .runtime_emoji_index.html
