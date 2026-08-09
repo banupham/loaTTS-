@@ -6,11 +6,13 @@ __pycache__/
 settings.json
 .playback_speed.json
 .emoji_rules.json
+.prosody_settings.json
 .clarity_preset_v1
 .runtime_index.html
 .runtime_speed_index.html
 .runtime_emoji_index.html
 .runtime_tailguard_index.html
 .runtime_stable_index.html
+.runtime_prosody_index.html
 .DS_Store
 Thumbs.db
