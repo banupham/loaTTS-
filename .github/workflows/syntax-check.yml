@@ -18,4 +18,4 @@ jobs:
           python-version: "3.12"
 
       - name: Compile Python
-        run: python -m py_compile app.py run.py speed_patch.py
+        run: python -m py_compile app.py run.py speed_patch.py emoji_patch.py
