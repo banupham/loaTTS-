@@ -22,7 +22,7 @@ if "%LOA_TTS_COMMENT_DELAY%"=="" set LOA_TTS_COMMENT_DELAY=1.0
 if "%LOA_TTS_CLARITY_PRESET%"=="" set LOA_TTS_CLARITY_PRESET=1
 
 echo ============================================================
-echo  TIKTOK COMMENT TTS - TWO-STAGE PREBUFFER PIPELINE
+echo  TIKTOK COMMENT TTS - PREBUFFER + TEXT PROSODY
 echo ============================================================
 echo Web       : http://127.0.0.1:%LOA_TTS_PORT%
 echo Webhook   : http://127.0.0.1:%LOA_TTS_PORT%%LOA_TTS_EVENT_PATH%
@@ -36,6 +36,7 @@ echo Generator : 1 thread - tao PCM hoan chinh truoc
 echo Player    : chi truyen PCM da tao san
 echo Burst     : lay comment cu nhat, bo cac comment con lai trong dot
 echo Ready     : chi giu 1 audio ke tiep
+echo Prosody   : chinh tren Web - normal / clear / slow
 echo Clarity   : preset ro chu mot lan = %LOA_TTS_CLARITY_PRESET%
 echo Share/UI  : OFF - middleware da chuan hoa
 echo Speed     : ORIGINAL 1.00x - khong playbackRate
@@ -45,7 +46,7 @@ echo Dien thoai LAN: http://IP_MAY_CHU:%LOA_TTS_PORT%
 echo ============================================================
 echo.
 
-.venv\Scripts\python.exe pipeline_runtime.py
+.venv\Scripts\python.exe prosody_runtime.py
 set EXIT_CODE=%ERRORLEVEL%
 
 echo.
