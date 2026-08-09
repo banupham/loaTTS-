@@ -9,5 +9,6 @@ settings.json
 .runtime_index.html
 .runtime_speed_index.html
 .runtime_emoji_index.html
+.runtime_tailguard_index.html
 .DS_Store
 Thumbs.db
