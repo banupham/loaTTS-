@@ -14,8 +14,8 @@ QUEUE_MAX = max(1, int(os.getenv("LOA_TTS_QUEUE_MAX", "10")))
 COMMENT_MAX_AGE_SECONDS = max(
     0.0, float(os.getenv("LOA_TTS_COMMENT_MAX_AGE", "8"))
 )
-INTER_COMMENT_GAP_SECONDS = max(
-    0.0, float(os.getenv("LOA_TTS_INTER_COMMENT_GAP", "0.12"))
+COMMENT_START_DELAY_SECONDS = max(
+    0.0, float(os.getenv("LOA_TTS_COMMENT_DELAY", "1.0"))
 )
 
 # Thay queue trước khi FastAPI lifespan khởi động. Không đụng vào /audio,
@@ -23,7 +23,13 @@ INTER_COMMENT_GAP_SECONDS = max(
 core.QUEUE_MAX = QUEUE_MAX
 core.COMMENT_MAX_AGE_SECONDS = COMMENT_MAX_AGE_SECONDS
 core.comment_queue = asyncio.Queue(maxsize=QUEUE_MAX)
-core.stats.setdefault("load_shed_cooldowns", 0)
+core.stats.setdefault("load_shed_delays", 0)
+
+
+def _is_expired(job) -> tuple[bool, float]:
+    age = time.time() - job.created_at
+    expired = COMMENT_MAX_AGE_SECONDS > 0 and age > COMMENT_MAX_AGE_SECONDS
+    return expired, age
 
 
 async def _speaker_worker_load_shed() -> None:
@@ -32,14 +38,10 @@ async def _speaker_worker_load_shed() -> None:
     while True:
         await global_current.active_speaker_event.wait()
         job = await global_current.comment_queue.get()
-        attempted_playback = False
 
         try:
-            age = time.time() - job.created_at
-            if (
-                COMMENT_MAX_AGE_SECONDS > 0
-                and age > COMMENT_MAX_AGE_SECONDS
-            ):
+            expired, age = _is_expired(job)
+            if expired:
                 global_current.stats["comments_expired"] += 1
                 print(
                     f"[LOAD] Bỏ comment quá cũ ({age:.1f}s): "
@@ -47,13 +49,33 @@ async def _speaker_worker_load_shed() -> None:
                 )
                 continue
 
+            # Không phát ngay khi vừa lấy comment khỏi queue. Khoảng nghỉ này
+            # tách rõ hai phiên TTS và cho CPU/browser/stream có thời gian hồi.
+            if COMMENT_START_DELAY_SECONDS > 0:
+                global_current.stats["load_shed_delays"] += 1
+                print(
+                    f"[LOAD] Chờ {COMMENT_START_DELAY_SECONDS:.2f}s trước khi đọc: "
+                    f"{job.display_name}: {job.text[:80]}"
+                )
+                await asyncio.sleep(COMMENT_START_DELAY_SECONDS)
+
+                # Trong lúc chờ, comment có thể đã quá cũ. Bỏ luôn thay vì
+                # ép TTS chạy backlog đã không còn giá trị trong LIVE.
+                expired, age = _is_expired(job)
+                if expired:
+                    global_current.stats["comments_expired"] += 1
+                    print(
+                        f"[LOAD] Bỏ comment sau thời gian chờ vì đã cũ ({age:.1f}s): "
+                        f"{job.display_name}: {job.text[:80]}"
+                    )
+                    continue
+
             while True:
                 device_id, ws = await global_current._wait_for_active_speaker()
                 future = asyncio.get_running_loop().create_future()
                 global_current.pending_completion[job.id] = future
                 global_current.current_job = job
                 global_current.current_started_at = time.time()
-                attempted_playback = True
 
                 try:
                     await ws.send_json(
@@ -93,11 +115,8 @@ async def _speaker_worker_load_shed() -> None:
                 if result == "completed":
                     global_current.stats["comments_played"] += 1
                 elif result == "retry":
-                    if (
-                        COMMENT_MAX_AGE_SECONDS <= 0
-                        or time.time() - job.created_at
-                        <= COMMENT_MAX_AGE_SECONDS
-                    ):
+                    expired, _ = _is_expired(job)
+                    if not expired:
                         await global_current._queue_comment(job)
                     else:
                         global_current.stats["comments_expired"] += 1
@@ -107,22 +126,19 @@ async def _speaker_worker_load_shed() -> None:
                 break
         finally:
             global_current.comment_queue.task_done()
-            if attempted_playback and INTER_COMMENT_GAP_SECONDS > 0:
-                global_current.stats["load_shed_cooldowns"] += 1
-                await asyncio.sleep(INTER_COMMENT_GAP_SECONDS)
 
 
 core._speaker_worker = _speaker_worker_load_shed
-core.SERVER_VERSION = "3.0"
-core.app.version = "3.0"
+core.SERVER_VERSION = "3.1"
+core.app.version = "3.1"
 
 
 if __name__ == "__main__":
     print("[CORE] Stable audio: VieNeu infer_stream + PCM player nguyên bản")
     print(
         f"[LOAD] queue={QUEUE_MAX} | max_age={COMMENT_MAX_AGE_SECONDS:.1f}s "
-        f"| gap={INTER_COMMENT_GAP_SECONDS * 1000:.0f}ms"
+        f"| delay_before_play={COMMENT_START_DELAY_SECONDS:.2f}s"
     )
     print(f"[LOAD] ONNX threads={core.THREADS or 'auto'}")
-    print("[LOAD] Queue đầy sẽ bỏ comment cũ nhất, ưu tiên comment mới.")
+    print("[LOAD] Mỗi comment chờ trước khi phát; queue đầy bỏ comment cũ nhất.")
     uvicorn.run(core.app, host=core.HOST, port=core.PORT, log_level="info")
