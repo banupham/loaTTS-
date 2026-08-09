@@ -46,6 +46,7 @@ core.stats.setdefault("pipeline_generated", 0)
 core.stats.setdefault("pipeline_skipped_burst", 0)
 core.stats.setdefault("pipeline_prepared_bytes", 0)
 core.stats.setdefault("pipeline_play_delays", 0)
+core.stats.setdefault("pipeline_generation_errors", 0)
 
 
 def _is_expired(job) -> tuple[bool, float]:
@@ -121,7 +122,6 @@ async def _generation_worker() -> None:
         # Chỉ chuẩn bị đúng 1 comment phía trước comment đang phát.
         await ready_slot.acquire()
         slot_owned = True
-        job = None
 
         try:
             job = await core.comment_queue.get()
@@ -139,7 +139,19 @@ async def _generation_worker() -> None:
                 # các comment còn lại trong burst bị bỏ để không tạo backlog.
                 _drop_rest_of_burst()
 
-                pcm = await loop.run_in_executor(tts_executor, _render_job_sync, job)
+                try:
+                    pcm = await loop.run_in_executor(
+                        tts_executor, _render_job_sync, job
+                    )
+                except Exception as exc:
+                    core.stats["comments_failed"] += 1
+                    core.stats["pipeline_generation_errors"] += 1
+                    print(
+                        f"[GEN] Lỗi tạo audio {job.id}: "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+                    continue
+
                 if not pcm:
                     core.stats["comments_failed"] += 1
                     print(f"[GEN] Không tạo được audio: {job.id}")
@@ -163,7 +175,7 @@ async def _speaker_worker_pipeline() -> None:
     while True:
         await core.active_speaker_event.wait()
         job = await ready_queue.get()
-        ready_slot.release()  # cho generator chuẩn bị comment kế tiếp khi đang phát job này
+        ready_slot.release()  # generator chuẩn bị comment kế tiếp khi đang phát job này
 
         try:
             expired, age = _is_expired(job)
@@ -194,6 +206,8 @@ async def _speaker_worker_pipeline() -> None:
                 )
                 continue
 
+            # Nếu loa đổi giữa chừng, dùng lại chính PCM đã chuẩn bị và gửi lại;
+            # không quay về generator, không tranh ready_slot và không deadlock.
             while True:
                 device_id, ws = await core._wait_for_active_speaker()
                 future = asyncio.get_running_loop().create_future()
@@ -236,24 +250,22 @@ async def _speaker_worker_pipeline() -> None:
 
                 if result == "completed":
                     core.stats["comments_played"] += 1
-                elif result == "retry":
+                    break
+
+                if result == "retry":
                     expired, _ = _is_expired(job)
                     if not expired:
-                        # Audio đã có sẵn, giữ cache để phát lại trên loa mới.
-                        await ready_slot.acquire()
-                        await ready_queue.put(job)
-                    else:
-                        core.stats["comments_expired"] += 1
-                else:
-                    core.stats["comments_failed"] += 1
-                    print(f"[PLAY] Comment phát lỗi: {detail}")
+                        print(f"[PLAY] Đổi loa, phát lại PCM đã có: {job.id}")
+                        continue
+                    core.stats["comments_expired"] += 1
+                    break
+
+                core.stats["comments_failed"] += 1
+                print(f"[PLAY] Comment phát lỗi: {detail}")
                 break
         finally:
-            # Nếu job không được đưa lại ready_queue thì dọn PCM khỏi RAM.
-            queued_again = any(item is job for item in list(ready_queue._queue))
-            if not queued_again:
-                with prepared_audio_lock:
-                    prepared_audio.pop(job.id, None)
+            with prepared_audio_lock:
+                prepared_audio.pop(job.id, None)
             ready_queue.task_done()
 
 
@@ -309,28 +321,31 @@ def _apply_clarity_preset_once() -> None:
     if not CLARITY_PRESET_ENABLED or CLARITY_MARKER.exists():
         return
 
-    with core.settings_lock:
-        core.settings = core.settings.model_copy(
-            update={
-                "style": "tu_nhien",
-                "temperature": 0.62,
-                "top_k": 20,
-                "top_p": 0.90,
-                "max_chars": 160,
-                "repetition_penalty": 1.10,
-            }
-        )
-        core._save_settings()
+    try:
+        with core.settings_lock:
+            core.settings = core.settings.model_copy(
+                update={
+                    "style": "tu_nhien",
+                    "temperature": 0.62,
+                    "top_k": 20,
+                    "top_p": 0.90,
+                    "max_chars": 160,
+                    "repetition_penalty": 1.10,
+                }
+            )
+            core._save_settings()
 
-    CLARITY_MARKER.write_text(
-        "style=tu_nhien\ntemperature=0.62\ntop_k=20\ntop_p=0.90\n"
-        "max_chars=160\nrepetition_penalty=1.10\n",
-        encoding="utf-8",
-    )
-    print(
-        "[VOICE] Đã áp preset rõ chữ: natural, temp=0.62, top_k=20, "
-        "top_p=0.90, repetition=1.10, max_chars=160"
-    )
+        CLARITY_MARKER.write_text(
+            "style=tu_nhien\ntemperature=0.62\ntop_k=20\ntop_p=0.90\n"
+            "max_chars=160\nrepetition_penalty=1.10\n",
+            encoding="utf-8",
+        )
+        print(
+            "[VOICE] Đã áp preset rõ chữ: natural, temp=0.62, top_k=20, "
+            "top_p=0.90, repetition=1.10, max_chars=160"
+        )
+    except Exception as exc:
+        print(f"[VOICE] Không áp được preset rõ chữ: {exc}")
 
 
 # Original lifespan sẽ tạo core.worker_task bằng hàm _speaker_worker hiện tại.
