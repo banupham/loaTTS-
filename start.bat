@@ -19,22 +19,25 @@ if "%LOA_TTS_WARMUP%"=="" set LOA_TTS_WARMUP=1
 if "%LOA_TTS_QUEUE_MAX%"=="" set LOA_TTS_QUEUE_MAX=10
 if "%LOA_TTS_COMMENT_MAX_AGE%"=="" set LOA_TTS_COMMENT_MAX_AGE=8
 if "%LOA_TTS_COMMENT_DELAY%"=="" set LOA_TTS_COMMENT_DELAY=1.0
+if "%LOA_TTS_CLARITY_PRESET%"=="" set LOA_TTS_CLARITY_PRESET=1
 
 echo ============================================================
-echo  TIKTOK COMMENT TTS - STABLE LOAD CORE
+echo  TIKTOK COMMENT TTS - TWO-STAGE PREBUFFER PIPELINE
 echo ============================================================
 echo Web       : http://127.0.0.1:%LOA_TTS_PORT%
 echo Webhook   : http://127.0.0.1:%LOA_TTS_PORT%%LOA_TTS_EVENT_PATH%
 echo Health    : http://127.0.0.1:%LOA_TTS_PORT%/health
 echo Precision : %LOA_TTS_PRECISION%
-echo Threads   : %LOA_TTS_THREADS%
+echo ONNX thr  : %LOA_TTS_THREADS%
 echo Queue max : %LOA_TTS_QUEUE_MAX%
 echo Max age   : %LOA_TTS_COMMENT_MAX_AGE%s
-echo Delay     : %LOA_TTS_COMMENT_DELAY%s before every comment
-echo Audio     : ORIGINAL app.py infer_stream + PCM player
+echo Gap       : %LOA_TTS_COMMENT_DELAY%s before every comment
+echo Generator : 1 thread - tao PCM hoan chinh truoc
+echo Player    : chi truyen PCM da tao san
+echo Burst     : lay comment cu nhat, bo cac comment con lai trong dot
+echo Ready     : chi giu 1 audio ke tiep
+echo Clarity   : preset ro chu mot lan = %LOA_TTS_CLARITY_PRESET%
 echo Share/UI  : OFF - middleware da chuan hoa
-echo Filter    : exact phrase + viet tat + token la
-echo Emoji     : tu dat emoji=cach_doc tren Web
 echo Speed     : ORIGINAL 1.00x - khong playbackRate
 echo TailGuard : OFF
 echo.
@@ -42,7 +45,7 @@ echo Dien thoai LAN: http://IP_MAY_CHU:%LOA_TTS_PORT%
 echo ============================================================
 echo.
 
-.venv\Scripts\python.exe load_shed_runtime.py
+.venv\Scripts\python.exe pipeline_runtime.py
 set EXIT_CODE=%ERRORLEVEL%
 
 echo.
