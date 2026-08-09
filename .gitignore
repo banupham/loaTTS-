@@ -10,5 +10,6 @@ settings.json
 .runtime_speed_index.html
 .runtime_emoji_index.html
 .runtime_tailguard_index.html
+.runtime_stable_index.html
 .DS_Store
 Thumbs.db
