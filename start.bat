@@ -22,6 +22,7 @@ if "%LOA_TTS_TAIL_BASE%"=="" set LOA_TTS_TAIL_BASE=1.5
 if "%LOA_TTS_TAIL_PER_WORD%"=="" set LOA_TTS_TAIL_PER_WORD=0.65
 if "%LOA_TTS_TAIL_MIN%"=="" set LOA_TTS_TAIL_MIN=2.2
 if "%LOA_TTS_TAIL_MAX%"=="" set LOA_TTS_TAIL_MAX=15
+if "%LOA_TTS_TAIL_FADE_MS%"=="" set LOA_TTS_TAIL_FADE_MS=30
 
 echo ============================================================
 echo  TIKTOK COMMENT TTS - SELF CONTAINED
@@ -35,7 +36,8 @@ echo Max age   : %LOA_TTS_COMMENT_MAX_AGE%s
 echo Filter    : EXACT PHRASE - xoa cum, giu phan comment con lai
 echo Speed     : 0.70x - 1.50x, chinh tren Web
 echo Emoji     : tu dat emoji=cach doc tren Web
-echo TailGuard : base=%LOA_TTS_TAIL_BASE%s word=%LOA_TTS_TAIL_PER_WORD%s min=%LOA_TTS_TAIL_MIN%s max=%LOA_TTS_TAIL_MAX%s
+echo TailGuard : base=%LOA_TTS_TAIL_BASE%s word=%LOA_TTS_TAIL_PER_WORD%s min=%LOA_TTS_TAIL_MIN%s max=%LOA_TTS_TAIL_MAX%s fade=%LOA_TTS_TAIL_FADE_MS%ms
+echo Audio     : block 120ms, buffer 200ms, edge fade 8ms
 echo.
 echo Dien thoai LAN: http://IP_MAY_CHU:%LOA_TTS_PORT%
 echo ============================================================
